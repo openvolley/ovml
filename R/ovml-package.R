@@ -5,9 +5,11 @@
 #' @name ovml
 #' @docType package
 #' @importFrom assertthat assert_that is.flag is.string
+#' @importFrom graphics lines rasterImage text
 #' @importFrom magick geometry_size_pixels image_data image_extent image_info image_read image_scale
 #' @importFrom magrittr `%>%`
-#' @importFrom torch cuda_is_available nnf_interpolate nnf_pad nn_batch_norm2d nn_conv2d nn_leaky_relu nn_max_pool2d nn_module nn_module_list nn_sequential torch_arange torch_cat torch_device torch_meshgrid torch_tensor
 #' @importFrom stats setNames
+#' @importFrom torch cuda_is_available nnf_interpolate nnf_pad nn_batch_norm2d nn_conv2d nn_leaky_relu nn_max_pool2d nn_module nn_module_list nn_sequential torch_arange torch_cat torch_device torch_meshgrid torch_tensor
+#' @importFrom utils download.file
 
 NULL

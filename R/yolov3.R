@@ -475,19 +475,11 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
 #'
 #' @examples
 #' \dontrun{
-#'  dn <- ovml_yolo()
-#'  dn$load_weights("~/untan.gl/volleyball/ryolotorch/yolov3.weights")
-#'  img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
-#'  res <- ovml_yolo_detect(dn, img)
-#'
-#'  ## plot with base graphics
-#'  img <- jpeg::readJPEG(img)
-#'  plot(c(0, dim(img)[2]), c(0, dim(img)[1]), type = "n", axes = FALSE, xlab = "", ylab = "", asp = 1)
-#'  rasterImage(img, 0, 0, dim(img)[2], dim(img)[1])
-#'  for (i in seq_len(nrow(res))) lines(c(res$xmin[i], rep(res$xmax[i], 2), rep(res$xmin[i], 2)),
-#'                                      c(rep(res$ymin[i], 2), rep(res$ymax[i], 2), res$ymin[i]), col = "blue")
+#'   dn <- ovml_yolo()
+#'   img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
+#'   res <- ovml_yolo_detect(dn, img)
+#'   ovml_plot(img, res)
 #' }
-#'
 #' @export
 ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, num_classes = 80, input_image_size = 416L, class_labels = ovml_class_labels()) {
     image <- image_read(image_file) ## h x w x rgb
