@@ -26,9 +26,7 @@ frame image (bundled with the package):
 
 ``` r
 img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
-img <- jpeg::readJPEG(img)
-plot(c(0, dim(img)[2]), c(0, dim(img)[1]), type = "n", axes = FALSE, xlab = "", ylab = "", asp = 1)
-rasterImage(img, 0, 0, dim(img)[2], dim(img)[1])
+ovml_plot(img)
 ```
 
 <img src="man/figures/README-ex1-1.png" width="100%" />
@@ -44,13 +42,7 @@ Now we can use the network to detect objects:
 
 ``` r
 res <- ovml_yolo_detect(dn, img)
-
-## plot the results
-plot(c(0, dim(img)[2]), c(0, dim(img)[1]), type = "n", axes = FALSE, xlab = "", ylab = "", asp = 1)
-rasterImage(img, 0, 0, dim(img)[2], dim(img)[1])
-for (i in seq_len(nrow(res)))
-    lines(c(res$xmin[i], rep(res$xmax[i], 2), rep(res$xmin[i], 2)),
-          c(rep(res$ymin[i], 2), rep(res$ymax[i], 2), res$ymin[i]), col = "blue")
+ovml_plot(img, res)
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />

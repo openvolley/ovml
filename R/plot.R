@@ -25,10 +25,12 @@ ovml_plot <- function(img, detections, line_args = list(col = "blue", lwd = 1), 
     if (is.character(img)) img <- jpeg::readJPEG(img)
     plot(c(0, dim(img)[2]), c(0, dim(img)[1]), type = "n", axes = FALSE, xlab = "", ylab = "", asp = 1)
     rasterImage(img, 0, 0, dim(img)[2], dim(img)[1])
-    for (i in seq_len(nrow(detections))) {
-        do.call(lines, c(list(x = c(detections$xmin[i], rep(detections$xmax[i], 2), rep(detections$xmin[i], 2)), y = c(rep(detections$ymin[i], 2), rep(detections$ymax[i], 2), detections$ymin[i])), line_args))
+    if (!missing(detections) && !is.null(detections)) {
+        for (i in seq_len(nrow(detections))) {
+            do.call(lines, c(list(x = c(detections$xmin[i], rep(detections$xmax[i], 2), rep(detections$xmin[i], 2)), y = c(rep(detections$ymin[i], 2), rep(detections$ymax[i], 2), detections$ymin[i])), line_args))
+        }
+        do.call(text, c(list(x = (detections$xmin + detections$xmax)/2, y = detections$ymin, labels = detections$class), label_args))
     }
-    do.call(text, c(list(x = (detections$xmin + detections$xmax)/2, y = detections$ymin, labels = detections$class), label_args))
 }
 
 #' @export
@@ -39,11 +41,18 @@ ovml_ggplot <- function(img, detections, line_args = list(col = "blue", size = 0
     label_geom <- match.arg(label_geom, c("label", "text"))
     if (is.character(img)) img <- jpeg::readJPEG(img, native = TRUE)
     iwh <- dim(img)[c(2, 1)]
-    detections$xmid <- (detections$xmin + detections$xmax)/2
+    if (!missing(detections) && !is.null(detections)) {
+        detections$xmid <- (detections$xmin + detections$xmax)/2
+    } else {
+        detections <- data.frame()
+    }
     if (label_geom == "text") label_args$fill <- NULL
-    ggplot2::ggplot(detections) +
+    p <- ggplot2::ggplot(detections) +
         ggplot2::annotation_custom(grid::rasterGrob(img), xmin = 0, xmax = iwh[1], ymin = 0, ymax = iwh[2]) +
-        do.call(ggplot2::geom_rect, c(list(ggplot2::aes_string(xmin = "xmin", xmax = "xmax", ymin = "ymin", ymax = "ymax")),  line_args)) +
-        do.call(ifelse(label_geom == "label", ggplot2::geom_label, ggplot2::geom_text), c(list(ggplot2::aes_string(x = "xmid", y = "ymin", label = "class")), label_args)) +
         ggplot2::coord_fixed() + ggplot2::xlim(c(0, iwh[1])) + ggplot2::ylim(c(0, iwh[2]))
+    if (nrow(detections) > 0) {
+        p <- p + do.call(ggplot2::geom_rect, c(list(ggplot2::aes_string(xmin = "xmin", xmax = "xmax", ymin = "ymin", ymax = "ymax")),  line_args)) +
+            do.call(ifelse(label_geom == "label", ggplot2::geom_label, ggplot2::geom_text), c(list(ggplot2::aes_string(x = "xmid", y = "ymin", label = "class")), label_args))
+    }
+    p
 }
