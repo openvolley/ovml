@@ -1,18 +1,18 @@
 dim_off <- 1L ## 0-based dimension indexing in C++/Python, but 1-based dimension indexing here
-LETTERBOXING <- FALSE
+YOLO3_LETTERBOXING <- FALSE
 
-empty_layer <- nn_module("empty_layer",
+yolo3_empty_layer <- nn_module("empty_layer",
                         initialize = function() {},
                         forward = function(x) x)
 
-trace_layer <- nn_module("trace_layer",
+yolo3_trace_layer <- nn_module("trace_layer",
                         initialize = function(id) {self$.id <- id},
                         forward = function(x) {
                             cat(self$.id, ": dim x = ", dim(x), "\n")
                             x
                         })
 
-upsample_layer <- nn_module("upsample_layer",
+yolo3_upsample_layer <- nn_module("upsample_layer",
                            initialize = function(stride) {
                                self$.stride <- stride
                            },
@@ -25,13 +25,13 @@ upsample_layer <- nn_module("upsample_layer",
                                    w <- dim(x)[3] * self$.stride
                                    x <- nnf_interpolate(x, w, mode = "nearest")
                                } else {
-                                   stop("expecting 3- or 4-D input to upsample_layer")
+                                   stop("expecting 3- or 4-D input to yolo3_upsample_layer")
                                }
                                x
                            }
                            )
 
-maxpool_layer_2d <- nn_module("maxpool_layer_2d",
+yolo3_maxpool_layer_2d <- nn_module("maxpool_layer_2d",
                             initialize = function(kernel_size, stride) {
                                 self$.kernel_size <- kernel_size
                                 self$.stride <- stride
@@ -48,7 +48,7 @@ maxpool_layer_2d <- nn_module("maxpool_layer_2d",
                             )
 
 ## anchors should be n x 2 matrix
-detection_layer <- nn_module("detection_layer",
+yolo3_detection_layer <- nn_module("detection_layer",
                             initialize = function(anchors, device) {
                                 self$.anchors <- anchors
                                 self$.device <- device
@@ -93,7 +93,7 @@ get_int_from_cfg <- function(block, key, default_value = 0L) {
     as.integer(get_string_from_cfg(block, key, default_value = default_value))
 }
 
-read_darknet_cfg <- function(cfg_file) {
+yolo3_read_darknet_cfg <- function(cfg_file) {
     cfg <- readLines(cfg_file)
     blocks <- list()
     block <- list()
@@ -104,6 +104,7 @@ read_darknet_cfg <- function(cfg_file) {
         } else if (substr(line, 1, 1) == "[") {
             if (length(block)) blocks[[length(blocks)+1]] <- block
             block <- list(type = substr(line, 2, nchar(line)-1))
+            if (!block$type %in% c("convolutional", "yolo", "route", "shortcut", "net", "upsample", "maxpool")) warning("block type: ", block$type, " is unknown")
         } else {
             this <- str_trim(strsplit(line, "=")[[1]])
             block <- c(block, setNames(list(this[2]), this[1]))
@@ -113,7 +114,7 @@ read_darknet_cfg <- function(cfg_file) {
     blocks
 }
 
-create_darknet_modules <- function(blocks, device) {
+yolo3_create_darknet_modules <- function(blocks, device) {
     prev_filters <- 3L
     output_filters <- integer()
     net <- list()
@@ -140,21 +141,21 @@ create_darknet_modules <- function(blocks, device) {
                 if (activation == "leaky") {
                     module$add_module(paste0("leaky_", index), nn_leaky_relu(0.1, inplace = TRUE))
                 }
-                ##module$add_module(paste0("trace_", index), trace_layer(paste0(index, " out")))
+                ##module$add_module(paste0("trace_", index), yolo3_trace_layer(paste0(index, " out")))
             } else if (layer_type == "upsample") {
                 stride <- get_int_from_cfg(block, "stride", 1)
-                module$add_module(paste0("upsample_", index), upsample_layer(stride))
+                module$add_module(paste0("upsample_", index), yolo3_upsample_layer(stride))
             } else if (layer_type == "maxpool") {
                 stride <- get_int_from_cfg(block, "stride", 1)
                 size <- get_int_from_cfg(block, "size", 1)
-                module$add_module(paste0("maxpool_", index), maxpool_layer_2d(size, stride))
+                module$add_module(paste0("maxpool_", index), yolo3_maxpool_layer_2d(size, stride))
             } else if (layer_type == "shortcut") {
                 ## skip connection
                 block$from <- get_int_from_cfg(block, "from", 0) + index
                 ## from values are always negative, adding +index makes them indexed as per modules in the $net
                 blocks[[i]] <- block
                 ## placeholder
-                module$add_module(paste0("shortcut_", index), empty_layer())
+                module$add_module(paste0("shortcut_", index), yolo3_empty_layer())
             } else if (layer_type == "route") {
                 layers_info <- get_string_from_cfg(block, "layers", "")
                 layers <- as.integer(strsplit(layers_info, ",")[[1]])
@@ -166,7 +167,7 @@ create_darknet_modules <- function(blocks, device) {
                 block$end <- end
                 blocks[[i]] <- block
                 ## placeholder
-                module$add_module(paste0("route_", index), empty_layer())
+                module$add_module(paste0("route_", index), yolo3_empty_layer())
                 filters <- output_filters[start]
                 if (!is.na(end)) filters <- filters + output_filters[end]
             } else if (layer_type == "yolo") {
@@ -175,7 +176,7 @@ create_darknet_modules <- function(blocks, device) {
                 anchor_info <- get_string_from_cfg(block, "anchors", "")
                 anchors <- as.integer(strsplit(anchor_info, ",")[[1]])
                 anchor_points <- matrix(anchors, ncol = 2, byrow = TRUE)[masks+1, ]
-                module <- detection_layer(anchor_points, device)
+                module <- yolo3_detection_layer(anchor_points, device)
             } else {
                 stop("unsupported operator: ", layer_type)
             }
@@ -190,10 +191,10 @@ create_darknet_modules <- function(blocks, device) {
     }
 
 
-darknet <- nn_module("darknet",
+yolo3_darknet <- nn_module("darknet",
                      initialize = function(cfg_file, device) {
-                         blocks <- read_darknet_cfg(cfg_file)
-                         temp <- create_darknet_modules(blocks, device) ## create and register modules
+                         blocks <- yolo3_read_darknet_cfg(cfg_file)
+                         temp <- yolo3_create_darknet_modules(blocks, device) ## create and register modules
                          self$blocks <- temp$blocks
                          self$net <- temp$net
                          self$device <- device
@@ -388,7 +389,7 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         class_label <- as.character(class_num)
     }
     oh <- if (is.null(dim(original_wh))) original_wh[2] else original_wh[, 2]
-    bb <- rescale_boxes(output[, 1:4, drop = FALSE], original_w = if (is.null(dim(original_wh))) original_wh[1] else original_wh[, 1], original_h = oh, input_image_size = input_image_size, letterboxing = LETTERBOXING)
+    bb <- rescale_boxes(output[, 1:4, drop = FALSE], original_w = if (is.null(dim(original_wh))) original_wh[1] else original_wh[, 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO3_LETTERBOXING)
     ## testing
     ##bb <- output[, 1:4]; oh <- 416L
     data.frame(class = class_label, score = output[, 6],
@@ -445,7 +446,7 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
         warning("'cuda' device not available, using 'cpu'")
         device <- "cpu"
     }
-    dn <- darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+    dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
     if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
         if (identical(tolower(weights_file), "auto")) {
             weights_file <- file.path(ovml_cache_dir(), paste0("yolov", version, ".weights"))
@@ -490,7 +491,7 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
 #' @export
 ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, num_classes = 80, input_image_size = 416L, class_labels = ovml_class_labels()) {
     image <- image_read(image_file) ## h x w x rgb
-    resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = LETTERBOXING), "rgb"))
+    resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
     img_tensor <- torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)))
     output <- as.array(net$forward(img_tensor))
     write_results(output, num_classes = num_classes, confidence = conf, nms_conf = nms_conf, original_wh = image_wh(image), input_image_size = input_image_size, class_labels = class_labels)
