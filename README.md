@@ -25,8 +25,9 @@ Use a YOLOv3 network to recognize objects in an image. We use a video
 frame image (bundled with the package):
 
 ``` r
+library(ovml)
 img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
-ovml_plot(img)
+ovml_ggplot(img)
 ```
 
 <img src="man/figures/README-ex1-1.png" width="100%" />
@@ -41,8 +42,9 @@ dn <- ovml_yolo()
 Now we can use the network to detect objects:
 
 ``` r
-res <- ovml_yolo_detect(dn, img)
-ovml_plot(img, res)
+res <- ovml_yolo_detect(dn, img, conf = 0.3)
+res <- res[res$class %in% c("person", "sports ball"), ]
+ovml_ggplot(img, res)
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />

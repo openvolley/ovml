@@ -54,5 +54,5 @@ ovml_ggplot <- function(img, detections, line_args = list(col = "blue", size = 0
         p <- p + do.call(ggplot2::geom_rect, c(list(ggplot2::aes_string(xmin = "xmin", xmax = "xmax", ymin = "ymin", ymax = "ymax")),  line_args)) +
             do.call(ifelse(label_geom == "label", ggplot2::geom_label, ggplot2::geom_text), c(list(ggplot2::aes_string(x = "xmid", y = "ymin", label = "class")), label_args))
     }
-    p
+    p + ggplot2::theme_void()
 }

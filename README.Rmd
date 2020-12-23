@@ -9,6 +9,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
+  fig.dpi = 120, fig.width = 8, fig.height = 6,
   out.width = "100%"
 )
 ```
@@ -34,8 +35,9 @@ The `ovml` package provides image and video machine learning tools for volleybal
 Use a YOLOv3 network to recognize objects in an image. We use a video frame image (bundled with the package):
 
 ```{r ex1}
+library(ovml)
 img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
-ovml_plot(img)
+ovml_ggplot(img)
 ```
 
 Construct the network. The first time this function is run, it will download and cache the network weights file (~200MB).
@@ -47,7 +49,8 @@ dn <- ovml_yolo()
 Now we can use the network to detect objects:
 
 ```{r ex3}
-res <- ovml_yolo_detect(dn, img)
-ovml_plot(img, res)
+res <- ovml_yolo_detect(dn, img, conf = 0.3)
+res <- res[res$class %in% c("person", "sports ball"), ]
+ovml_ggplot(img, res)
 
 ```
