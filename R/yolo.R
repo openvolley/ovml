@@ -1,7 +1,7 @@
 #' Construct YOLO network
 #'
 #' @references https://github.com/pjreddie/darknet
-#' @param version integer or string: currently only 3 (YOLO v3)
+#' @param version integer or string: currently only 3 (YOLO v3) or 4 (YOLO v4)
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir]
 #'
@@ -10,9 +10,9 @@
 # @examples
 #'
 #' @export
-ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
+ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto") {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3"))##, "5s", "5m", "5l", "5x"))
+    assert_that(version %in% c("3", "4"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -20,11 +20,17 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
         warning("'cuda' device not available, using 'cpu'")
         device <- "cpu"
     }
-    if (version == "3") {
-        dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+    if (version %in% c("3", "4")) {
+        if (version == "3") {
+            dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+            w_url <- "https://pjreddie.com/media/files/yolov3.weights"
+        } else {
+            dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+            w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
+        }
         if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
             if (identical(tolower(weights_file), "auto")) {
-                weights_file <- ovml_download_if("https://pjreddie.com/media/files/yolov3.weights", dest = paste0("yolov", version, ".weights"))
+                weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"))
             }
             if (file.exists(weights_file)) dn$load_weights(weights_file)
         }
@@ -56,7 +62,9 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
 #'   ovml_plot(img, res)
 #' }
 #' @export
-ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, num_classes = 80, input_image_size = 416L, class_labels = ovml_class_labels()) {
+ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, num_classes = 80, input_image_size, class_labels = ovml_class_labels()) {
+    if (missing(input_image_size) || is.null(input_image_size)) input_image_size <- as.integer(net$blocks[[1]]$height)
+    if (is.null(input_image_size) || is.na(input_image_size) || input_image_size <= 0) stop("invalid input_image_size: ", input_image_size)
     imgs <- lapply(image_file, function(im) {
         image <- image_read(im) ## h x w x rgb
         resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
