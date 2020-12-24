@@ -38,7 +38,7 @@ Detect objects in image using a YOLO network
 \examples{
 \dontrun{
   dn <- ovml_yolo()
-  img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
+  img <- ovml_example_image()
   res <- ovml_yolo_detect(dn, img)
   ovml_plot(img, res)
 }

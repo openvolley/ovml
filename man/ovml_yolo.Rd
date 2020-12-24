@@ -7,7 +7,7 @@
 ovml_yolo(version = 4, device = "cpu", weights_file = "auto")
 }
 \arguments{
-\item{version}{integer or string: currently only 3 (YOLO v3) or 4 (YOLO v4)}
+\item{version}{integer or string: currently 3 (YOLO v3), 4 (YOLO v4), or "4-tiny" (YOLO v4-tiny)}
 
 \item{device}{string: "cpu" or "cuda"}
 
@@ -15,6 +15,13 @@ ovml_yolo(version = 4, device = "cpu", weights_file = "auto")
 }
 \value{
 A YOLO network object
+
+\dontrun{
+  dn <- ovml_yolo()
+  img <- ovml_example_image()
+  res <- ovml_yolo_detect(dn, img)
+  ovml_plot(img, res)
+}
 }
 \description{
 Construct YOLO network

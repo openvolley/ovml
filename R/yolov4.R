@@ -172,7 +172,7 @@ yolo4_darknet <- nn_module("darknet",
                                      if (groups != 0) {
                                          chunk_size <- get_int_from_cfg(block, "chunk_size", 0)
                                          group_tensor <- torch_split(x, chunk_size, 1 + dim_off)
-                                         x <- group_tensor$at(group_id)
+                                         x <- group_tensor[[group_id + dim_off]]
                                      }
                                  } else if (length(layers) == 2) {
                                      x <- torch_cat(list(outputs[[layers[1]]], outputs[[layers[2]]]), 1 + dim_off)

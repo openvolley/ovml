@@ -1,18 +1,23 @@
 #' Construct YOLO network
 #'
 #' @references https://github.com/pjreddie/darknet
-#' @param version integer or string: currently only 3 (YOLO v3) or 4 (YOLO v4)
+#' @param version integer or string: currently 3 (YOLO v3), 4 (YOLO v4), or "4-tiny" (YOLO v4-tiny)
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir]
 #'
 #' @return A YOLO network object
 #'
-# @examples
+#' \dontrun{
+#'   dn <- ovml_yolo()
+#'   img <- ovml_example_image()
+#'   res <- ovml_yolo_detect(dn, img)
+#'   ovml_plot(img, res)
+#' }
 #'
 #' @export
 ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto") {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "4"))
+    assert_that(version %in% c("3", "4", "4-tiny"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -20,13 +25,16 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto") {
         warning("'cuda' device not available, using 'cpu'")
         device <- "cpu"
     }
-    if (version %in% c("3", "4")) {
+    if (version %in% c("3", "4", "4-tiny")) {
         if (version == "3") {
             dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
             w_url <- "https://pjreddie.com/media/files/yolov3.weights"
-        } else {
+        } else if (version %in% c("4", "4-tiny")) {
             dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
-            w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
+            w_url <- if (version == "4")
+                         "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
+                     else
+                         "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
         }
         if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
             if (identical(tolower(weights_file), "auto")) {
@@ -57,7 +65,7 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto") {
 #' @examples
 #' \dontrun{
 #'   dn <- ovml_yolo()
-#'   img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
+#'   img <- ovml_example_image()
 #'   res <- ovml_yolo_detect(dn, img)
 #'   ovml_plot(img, res)
 #' }
