@@ -322,11 +322,15 @@ bbox_iou <- function(box1, box2) {
 }
 
 ## apply nms and convert results matrix
+## original_wh should be an n x 2 matrix for n images
 write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 0.4, original_wh, input_image_size, class_labels) {
+    if (is.null(dim(original_wh))) original_wh <- matrix(original_wh, ncol = 2, byrow = TRUE)
+    if (nrow(original_wh) != dim(prediction)[1]) {
+        stop("number of images in prediction tensor does not match the number of rows in original_wh")
+    }
     if (missing(num_classes)) num_classes <- dim(prediction)[3] - 5
     mask_idx <- prediction[, , 5] > confidence
     if (!any(mask_idx)) return(data.frame(class = character(), score = numeric(), xmin = numeric(), xmax = numeric(), ymin = numeric(), ymax = numeric(), stringsAsFactors = FALSE))
-    prediction[, which(!mask_idx), ] <- 0
     ## coords in predictions are xmid, ymid, width, height
     box_corner <- array(dim = c(dim(prediction)[1:2], 4))
     box_corner[, , 1] <- prediction[, , 1] - prediction[, , 3]/2 ## xmin
@@ -334,9 +338,8 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
     box_corner[, , 3] <- prediction[, , 1] + prediction[, , 3]/2 ## xmax
     box_corner[, , 4] <- prediction[, , 2] + prediction[, , 4]/2 ## ymax
     prediction[, , 1:4] <- box_corner
-    batch_size <- dim(prediction)[1]
-    if (batch_size > 1) warning("code not tested with batch_size > 1")
-    output <- matrix(nrow = 0, ncol = 7)
+    batch_size <- dim(prediction)[1] ## number of images in batch
+    output <- matrix(nrow = 0, ncol = 8)
     for (ind in seq_len(batch_size)) {
         image_pred <- prediction[ind, , ]
         ##confidence thresholding
@@ -344,21 +347,16 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         max_conf <- apply(image_pred[, 6:num_classes, drop = FALSE], 1, max)
         max_conf_score <- apply(image_pred[, 6:num_classes, drop = FALSE], 1, which.max) ## indices
         image_pred <- cbind(image_pred[, 1:5, drop = FALSE], max_conf, max_conf_score)
-        image_pred_ <- image_pred[image_pred[, 5] > 0, , drop = FALSE]
+        image_pred_ <- image_pred[image_pred[, 5] > confidence, , drop = FALSE]
         if (nrow(image_pred_) < 1) next
         ## Get the various classes detected in the image
         img_classes <- unique(image_pred_[, 7])
         for (cls in img_classes) {
             ## perform NMS
             ## get the detections with one particular class
-#            cls_mask <- image_pred_*(image_pred_[:,-1] == cls).float().unsqueeze(1)
-#            class_mask_ind = torch.nonzero(cls_mask[:,-2]).squeeze()
-#            image_pred_class = image_pred_[class_mask_ind].view(-1,7)
             image_pred_class <- image_pred_[image_pred_[, 7] == cls, , drop = FALSE]
             ##sort the detections such that the entry with the maximum objectness
             ##confidence is at the top
-            #conf_sort_index = torch.sort(image_pred_class[:,4], descending = True )[1]
-            #image_pred_class = image_pred_class[conf_sort_index]
             image_pred_class <- image_pred_class[order(image_pred_class[, 5], decreasing = TRUE), , drop = FALSE]
             ndets <- nrow(image_pred_class)   ## Number of detections
             for (i in seq_len(ndets-1)) {
@@ -368,19 +366,14 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
                 ious <- tryCatch(bbox_iou(image_pred_class[i, , drop = FALSE], image_pred_class[ijdx, , drop = FALSE]), error = function(e) NULL)
                 if (is.null(ious)) break
                 ## Zero out all the detections that have IoU > threshhold
-                ##iou_mask = (ious < nms_conf).float().unsqueeze(1)
-                ##image_pred_class[i+1:] *= iou_mask
                 image_pred_class[ijdx[ious >= nms_conf], 5] <- 0
                 ## Remove the non-zero entries
-                ##non_zero_ind = torch.nonzero(image_pred_class[:,4]).squeeze()
                 image_pred_class <- image_pred_class[image_pred_class[, 5] > 0, , drop = FALSE]
             }
-            ##batch_ind <- rep(ind, nrow(image_pred_class)) ## Repeat the batch_id for as many detections of the class cls in the image
-##            output <- rbind(output, cbind(batch_ind, image_pred_class))
-            output <- rbind(output, image_pred_class)
+            output <- rbind(output, cbind(ind, image_pred_class))
         }
     }
-    class_num <- output[, 7]
+    class_num <- output[, 8]
     if (!missing(class_labels) && length(class_labels)) {
         class_label <- rep(NA_character_, length(class_num))
         tempidx <- which(class_num %in% seq_along(class_labels))
@@ -388,11 +381,11 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
     } else {
         class_label <- as.character(class_num)
     }
-    oh <- if (is.null(dim(original_wh))) original_wh[2] else original_wh[, 2]
-    bb <- rescale_boxes(output[, 1:4, drop = FALSE], original_w = if (is.null(dim(original_wh))) original_wh[1] else original_wh[, 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO3_LETTERBOXING)
+    oh <- original_wh[output[, 1], 2] ## one per output box
+    bb <- rescale_boxes(output[, 2:5, drop = FALSE], original_w = original_wh[output[, 1], 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO3_LETTERBOXING)
     ## testing
-    ##bb <- output[, 1:4]; oh <- 416L
-    data.frame(class = class_label, score = output[, 6],
+    bb <- output[, 2:5]; oh <- 416L
+    data.frame(image_number = output[, 1], class = class_label, score = output[, 7],
                xmin = bb[, 1] + 1, xmax = bb[, 3] + 1,
                ymin = oh + 1 - bb[, 4],
                ymax = oh + 1 - bb[, 2], stringsAsFactors = FALSE)

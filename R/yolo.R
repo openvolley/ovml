@@ -37,14 +37,14 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
 #' Detect objects in image using a YOLO network
 #'
 #' @param net yolo: as returned by [ovml_yolo]
-#' @param image_file string: path to image file
+#' @param image_file character: path to one or more image files
 #' @param conf scalar: confidence level
 #' @param nms_conf scalar: non-max suppression confidence level
 #' @param num_classes integer: number of classes that the network was trained on
 #' @param input_image_size integer: image size expected by the network
 #' @param class_labels character: the labels corresponding to the class numbers
 #'
-#' @return A matrix
+#' @return A data.frame with columns "image_number", "class", "score", "xmin", "xmax", "ymin", "ymax"
 #'
 #' @seealso [ovml_yolo]
 #'
@@ -57,11 +57,15 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
 #' }
 #' @export
 ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, num_classes = 80, input_image_size = 416L, class_labels = ovml_class_labels()) {
-    image <- image_read(image_file) ## h x w x rgb
-    resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
-    img_tensor <- torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)))
+    imgs <- lapply(image_file, function(im) {
+        image <- image_read(im) ## h x w x rgb
+        resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
+        list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3))), original_wh = image_wh(image))
+    })
+    img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)
     output <- as.array(net$forward(img_tensor))
-    write_results(output, num_classes = num_classes, confidence = conf, nms_conf = nms_conf, original_wh = image_wh(image), input_image_size = input_image_size, class_labels = class_labels)
+    owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
+    write_results(output, num_classes = num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = class_labels)
 }
 
 #' Class labels

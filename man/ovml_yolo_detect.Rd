@@ -17,7 +17,7 @@ ovml_yolo_detect(
 \arguments{
 \item{net}{yolo: as returned by \link{ovml_yolo}}
 
-\item{image_file}{string: path to image file}
+\item{image_file}{character: path to one or more image files}
 
 \item{conf}{scalar: confidence level}
 
@@ -30,7 +30,7 @@ ovml_yolo_detect(
 \item{class_labels}{character: the labels corresponding to the class numbers}
 }
 \value{
-A matrix
+A data.frame with columns "image_number", "class", "score", "xmin", "xmax", "ymin", "ymax"
 }
 \description{
 Detect objects in image using a YOLO network
