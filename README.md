@@ -26,7 +26,7 @@ frame image (bundled with the package):
 
 ``` r
 library(ovml)
-img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
+img <- ovml_example_image()
 ovml_ggplot(img)
 ```
 

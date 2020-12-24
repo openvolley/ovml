@@ -36,7 +36,7 @@ Use a YOLOv3 network to recognize objects in an image. We use a video frame imag
 
 ```{r ex1}
 library(ovml)
-img <- system.file("extdata/images/2019_03_01-KATS-BEDS-frame.jpg", package = "ovml")
+img <- ovml_example_image()
 ovml_ggplot(img)
 ```
 
