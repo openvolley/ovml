@@ -3,6 +3,7 @@
 export("%>%")
 export(ovml_cache_dir)
 export(ovml_class_labels)
+export(ovml_example_image)
 export(ovml_ggplot)
 export(ovml_plot)
 export(ovml_yolo)
