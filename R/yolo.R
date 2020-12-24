@@ -1,7 +1,7 @@
 #' Construct YOLO network
 #'
 #' @references https://github.com/pjreddie/darknet
-#' @param version integer or string: 3 (YOLO v3), "5s", "5m", "5l", "5x"
+#' @param version integer or string: currently only 3 (YOLO v3)
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir]
 #'
@@ -12,7 +12,7 @@
 #' @export
 ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "5s", "5m", "5l", "5x"))
+    assert_that(version %in% c("3"))##, "5s", "5m", "5l", "5x"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -30,8 +30,6 @@ ovml_yolo <- function(version = 3, device = "cpu", weights_file = "auto") {
         }
         if (device == "cuda") dn$to(torch_device(device))
         dn$eval()
-    } else {
-        dn <- yolo5_attempt_load(paste0("yolov", version))
     }
     dn
 }
