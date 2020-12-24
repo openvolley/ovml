@@ -10,6 +10,6 @@
 #' @importFrom magrittr `%>%`
 #' @importFrom stats setNames
 #' @importFrom torch cuda_is_available nnf_interpolate nnf_pad nn_batch_norm2d nn_conv2d nn_leaky_relu nn_max_pool2d nn_module nn_module_list nn_sequential torch_arange torch_cat torch_device torch_meshgrid torch_tensor
-#' @importFrom utils download.file
+#' @importFrom utils download.file tail
 
 NULL
