@@ -4,10 +4,10 @@
 \alias{ovml_yolo}
 \title{Construct YOLO network}
 \usage{
-ovml_yolo(version = 3, device = "cpu", weights_file = "auto")
+ovml_yolo(version = 4, device = "cpu", weights_file = "auto")
 }
 \arguments{
-\item{version}{integer or string: currently only 3 (YOLO v3)}
+\item{version}{integer or string: currently only 3 (YOLO v3) or 4 (YOLO v4)}
 
 \item{device}{string: "cpu" or "cuda"}
 

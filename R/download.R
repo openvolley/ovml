@@ -14,6 +14,9 @@ ovml_download_if <- function(url, dest) {
     ## dest is basename of destination file
     weights_file <- file.path(ovml_cache_dir(), dest)
     if (!dir.exists(dirname(weights_file))) dir.create(dirname(weights_file), recursive = TRUE)
-    if (!file.exists(weights_file)) download.file(url, destfile = weights_file, mode = "wb")
+    if (!file.exists(weights_file)) {
+        message("downloading weights from ", url, " to ", weights_file)
+        download.file(url, destfile = weights_file, mode = "wb")
+    }
     weights_file
 }

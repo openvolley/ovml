@@ -10,7 +10,7 @@ ovml_yolo_detect(
   conf = 0.6,
   nms_conf = 0.4,
   num_classes = 80,
-  input_image_size = 416L,
+  input_image_size,
   class_labels = ovml_class_labels()
 )
 }

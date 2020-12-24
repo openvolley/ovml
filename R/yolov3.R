@@ -191,6 +191,62 @@ yolo3_create_darknet_modules <- function(blocks, device) {
     }
 
 
+yolo3_load_weights <- function(net, blocks, weight_file) {
+    if (!file.exists(weight_file)) stop("weight file does not exist")
+    fs <- file(weight_file, "rb")
+    ## header info: 5 * int32_t  (3 x (int32) version info: major, minor, revision; then 1 x  (int64) number of images seen during training )
+    header_size <- 4L*5L
+    ## skip header
+    seek(fs, header_size)
+    weights <- torch_tensor(readBin(fs, "numeric", n = ceiling(file.size(weight_file)/4)+10, size = 4))
+    close(fs)
+    nw <- dim(weights)
+    index_weight <- 0L ## zero-based tensor indexing
+    for (i in seq_along(net)) {
+        module_info <- blocks[[i + 1]]
+        ## only conv layer need to load weight
+        if (module_info$type != "convolutional") next
+        conv_imp <- net[[i]][[1]]
+        if (inherits(conv_imp, "conv_trace")) conv_imp <- conv_imp$conv
+        batch_normalize <- get_int_from_cfg(module_info, "batch_normalize", 0)
+        if (batch_normalize > 0) {
+            ## second module
+            bn_imp <- net[[i]][[2]]
+            num_bn_biases <- bn_imp$bias$numel()
+            bn_bias <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
+            index_weight <- index_weight + num_bn_biases
+            bn_weights <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
+            index_weight <- index_weight + num_bn_biases
+            bn_running_mean <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
+            index_weight <- index_weight + num_bn_biases
+            bn_running_var <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
+            index_weight <- index_weight + num_bn_biases
+            bn_bias <- bn_bias$view_as(bn_imp$bias)
+            bn_weights <- bn_weights$view_as(bn_imp$weight)
+            bn_running_mean <- bn_running_mean$view_as(bn_imp$running_mean)
+            bn_running_var <- bn_running_var$view_as(bn_imp$running_var)
+            bn_imp$bias$set_data(bn_bias)
+            bn_imp$weight$set_data(bn_weights)
+            bn_imp$running_mean$set_data(bn_running_mean)
+            bn_imp$running_var$set_data(bn_running_var)
+        } else {
+            num_conv_biases <- conv_imp$bias$numel()
+            conv_bias <- weights$slice(0 + dim_off, index_weight, index_weight + num_conv_biases)
+            index_weight <- index_weight + num_conv_biases
+            conv_bias <- conv_bias$view_as(conv_imp$bias)
+            conv_imp$bias$set_data(conv_bias)
+        }
+        num_weights <- conv_imp$weight$numel()
+        conv_weights <- weights$slice(0 + dim_off, index_weight, index_weight + num_weights)
+        index_weight <- index_weight + num_weights
+        conv_weights <- conv_weights$view_as(conv_imp$weight)
+        conv_imp$weight$set_data(conv_weights)
+    }
+    if (index_weight != nw) {
+        warning("finished reading weights at ", index_weight, " of ", nw, " weights, something has gone wrong")
+    }
+}
+
 yolo3_darknet <- nn_module("darknet",
                      initialize = function(cfg_file, device) {
                          blocks <- yolo3_read_darknet_cfg(cfg_file)
@@ -200,109 +256,46 @@ yolo3_darknet <- nn_module("darknet",
                          self$device <- device
                      },
                      load_weights = function(weight_file) {
-                         if (!file.exists(weight_file)) stop("weight file does not exist")
-                         fs <- file(weight_file, "rb")
-                         ## header info: 5 * int32_t  (3 x (int32) version info: major, minor, revision; then 1 x  (int64) number of images seen during training )
-                         header_size <- 4L*5L
-                         ## skip header
-                         seek(fs, header_size)
-                         weights <- torch_tensor(readBin(fs, "numeric", n = ceiling(file.size(weight_file)/4)+10, size = 4))
-                         nw <- dim(weights)
-                         close(fs)
-                         index_weight <- 0L ## zero-based tensor indexing
-                         for (i in seq_along(self$net)) {
-                             module_info <- self$blocks[[i + 1]]
-                             module_type <- module_info$type
-                             ## only conv layer need to load weight
-                             if (module_type != "convolutional") next
-                             conv_imp <- self$net[[i]][[1]]
-                             batch_normalize <- get_int_from_cfg(module_info, "batch_normalize", 0)
-                             if (batch_normalize > 0) {
-                                 ## second module
-                                 bn_imp <- self$net[[i]][[2]]
-                                 num_bn_biases <- bn_imp$bias$numel()
-                                 bn_bias <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
-                                 index_weight <- index_weight + num_bn_biases
-                                 bn_weights <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
-                                 index_weight <- index_weight + num_bn_biases
-                                 bn_running_mean <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
-                                 index_weight <- index_weight + num_bn_biases
-                                 bn_running_var <- weights$slice(0 + dim_off, index_weight, index_weight + num_bn_biases)
-                                 index_weight <- index_weight + num_bn_biases
-                                 bn_bias <- bn_bias$view_as(bn_imp$bias)
-                                 bn_weights <- bn_weights$view_as(bn_imp$weight)
-                                 bn_running_mean <- bn_running_mean$view_as(bn_imp$running_mean)
-                                 bn_running_var <- bn_running_var$view_as(bn_imp$running_var)
-                                 bn_imp$bias$set_data(bn_bias)
-                                 bn_imp$weight$set_data(bn_weights)
-                                 bn_imp$running_mean$set_data(bn_running_mean)
-                                 bn_imp$running_var$set_data(bn_running_var)
-                             } else {
-                                 num_conv_biases <- conv_imp$bias$numel()
-                                 conv_bias <- weights$slice(0 + dim_off, index_weight, index_weight + num_conv_biases)
-                                 index_weight <- index_weight + num_conv_biases
-                                 conv_bias <- conv_bias$view_as(conv_imp$bias)
-                                 conv_imp$bias$set_data(conv_bias)
-                             }
-                             num_weights <- conv_imp$weight$numel()
-                             conv_weights <- weights$slice(0 + dim_off, index_weight, index_weight + num_weights)
-                             index_weight <- index_weight + num_weights
-                             conv_weights <- conv_weights$view_as(conv_imp$weight)
-                             conv_imp$weight$set_data(conv_weights)
-                         }
-                         if (index_weight != nw) {
-                             warning("finished reading weights with some unused values, something has gone wrong")
-                         }
+                         self$net <- yolo3_load_weights(self$net, self$blocks, weight_file)
                      },
-
-
-        forward = function(x) {
-            outputs <- list() ## will be indexed as for net
-            result <- NULL
-            for (i in seq_along(self$net)) {
-                block <- self$blocks[[i+1]]
-                layer_type <- block$type
-                if (layer_type == "net") next
-                if (layer_type == "convolutional" || layer_type == "upsample" || layer_type == "maxpool") {
-                    x <- self$net[[i]]$forward(x)
-                    outputs[[i]] <- x
-                } else if (layer_type == "route") {
-                    start <- block$start ## block$start and $end are indexed as per i here
-                    end <- block$end
-                    if (is.na(end)) {
-                        x <- outputs[[start]]
-                    } else {
-                        x <- torch_cat(list(outputs[[start]], outputs[[end]]), 1 + dim_off)
-                    }
-                    outputs[[i]] <- x
-                } else if (layer_type == "shortcut") {
-                    x <- outputs[[i-1]] + outputs[[block$from]]
-                    outputs[[i]] <- x
-                } else if (layer_type == "yolo") {
-                    net_info <- self$blocks[[1]]
-                    inp_dim <- get_int_from_cfg(net_info, "height", 0)
-                    num_classes <- get_int_from_cfg(block, "classes", 0)
-                    x <- self$net[[i]]$forward(x, inp_dim, num_classes, self$device)
-                    if (is.null(result)) {
-                        result <- x
-                    } else {
-                        result <- torch_cat(list(result, x), 1 + dim_off)
-                    }
-                    outputs[[i]] <- x
-                }
-                ##print(outputs[[i]])
-##                if (i == 83) {
-##                    if (length(dim(outputs[[i]])) == 4) print(as.array(outputs[[i]])[,1:3,1:5,1:5])
-##                    if (length(dim(outputs[[i]])) == 3) print(as.array(outputs[[i]])[,1:3,1:5])
-##                    print(range(as.array(outputs[[i]])))
-##                    ##print(as.array(result)[,1:3,1:5])
-##                    ##print(range(as.array(result)))
-##                    stop("checkme")
-##                }
-            }
-            result
-        }
-)
+                     forward = function(x) {
+                         outputs <- list() ## will be indexed as for net
+                         result <- NULL
+                         for (i in seq_along(self$net)) {
+                             block <- self$blocks[[i+1]]
+                             layer_type <- block$type
+                             if (layer_type == "net") next
+                             if (layer_type == "convolutional" || layer_type == "upsample" || layer_type == "maxpool") {
+                                 x <- self$net[[i]]$forward(x)
+                                 outputs[[i]] <- x
+                             } else if (layer_type == "route") {
+                                 start <- block$start ## block$start and $end are indexed as per i here
+                                 end <- block$end
+                                 if (is.na(end)) {
+                                     x <- outputs[[start]]
+                                 } else {
+                                     x <- torch_cat(list(outputs[[start]], outputs[[end]]), 1 + dim_off)
+                                 }
+                                 outputs[[i]] <- x
+                             } else if (layer_type == "shortcut") {
+                                 x <- outputs[[i-1]] + outputs[[block$from]]
+                                 outputs[[i]] <- x
+                             } else if (layer_type == "yolo") {
+                                 net_info <- self$blocks[[1]]
+                                 inp_dim <- get_int_from_cfg(net_info, "height", 0)
+                                 num_classes <- get_int_from_cfg(block, "classes", 0)
+                                 x <- self$net[[i]]$forward(x, inp_dim, num_classes, self$device)
+                                 if (is.null(result)) {
+                                     result <- x
+                                 } else {
+                                     result <- torch_cat(list(result, x), 1 + dim_off)
+                                 }
+                                 outputs[[i]] <- x
+                             }
+                         }
+                         result
+                     }
+                     )
 
 
 ## the iou of two bounding boxes
