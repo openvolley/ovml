@@ -21,9 +21,14 @@ remotes::install_github("openvolley/ovml")
 The `ovml` package provides image and video machine learning tools for
 volleyball analytics.
 
+Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/)
+object detection algorithm are included. These have been implemented on
+top of the [torch](https://torch.mlverse.org/) R package, meaning that
+no Python installation is required on your system.
+
 ## Example
 
-Use a YOLOv3 network to recognize objects in an image. We use a video
+Use a YOLOv4 network to recognize objects in an image. We use a video
 frame image (bundled with the package):
 
 ``` r
@@ -35,13 +40,13 @@ ovml_ggplot(img)
 <img src="man/figures/README-ex1-1.png" width="100%" />
 
 Construct the network. The first time this function is run, it will
-download and cache the network weights file (\~200MB).
+download and cache the network weights file (\~250MB).
 
 ``` r
 dn <- ovml_yolo()
 ```
 
-Now we can use the network to detect objects:
+Now we can use the network to detect objects in our image:
 
 ``` r
 res <- ovml_yolo_detect(dn, img, conf = 0.3)
