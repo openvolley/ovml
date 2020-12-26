@@ -254,6 +254,12 @@ yolo3_darknet <- nn_module("darknet",
                          self$blocks <- temp$blocks
                          self$net <- temp$net
                          self$device <- device
+                         temp <- unique(as.integer(unlist(lapply(temp$blocks, function(z) if (z$type == "yolo") z$classes))))
+                         if (length(temp) == 1) {
+                             self$num_classes <- temp
+                         } else {
+                             stop("inconsistent number of classes in the model cfg file")
+                         }
                      },
                      load_weights = function(weight_file) {
                          self$net <- yolo3_load_weights(self$net, self$blocks, weight_file)
@@ -337,8 +343,8 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         image_pred <- prediction[ind, , ]
         ##confidence thresholding
         ##NMS
-        max_conf <- apply(image_pred[, 6:num_classes, drop = FALSE], 1, max)
-        max_conf_score <- apply(image_pred[, 6:num_classes, drop = FALSE], 1, which.max) ## indices
+        max_conf <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, max)
+        max_conf_score <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, which.max) ## indices
         image_pred <- cbind(image_pred[, 1:5, drop = FALSE], max_conf, max_conf_score)
         image_pred_ <- image_pred[image_pred[, 5] > confidence, , drop = FALSE]
         if (nrow(image_pred_) < 1) next

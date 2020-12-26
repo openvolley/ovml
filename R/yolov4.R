@@ -149,6 +149,12 @@ yolo4_darknet <- nn_module("darknet",
                          self$blocks <- temp$blocks
                          self$net <- temp$net
                          self$device <- device
+                         temp <- unique(as.integer(unlist(lapply(temp$blocks, function(z) if (z$type == "yolo") z$classes))))
+                         if (length(temp) == 1) {
+                             self$num_classes <- temp
+                         } else {
+                             stop("inconsistent number of classes in the model cfg file")
+                         }
                      },
                      load_weights = function(weight_file) {
                          self$net <- yolo3_load_weights(self$net, self$blocks, weight_file)
