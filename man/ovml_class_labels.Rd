@@ -7,7 +7,10 @@
 ovml_class_labels(dataset = "coco")
 }
 \arguments{
-\item{dataset}{string: which dataset?}
+\item{dataset}{string: which dataset? One of
+\itemize{
+\item "coco" (used with the 3, 4, and "4-tiny" models)
+}}
 }
 \value{
 A character vector of class labels

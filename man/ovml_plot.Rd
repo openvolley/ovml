@@ -21,15 +21,15 @@ ovml_ggplot(
 )
 }
 \arguments{
-\item{img}{string or image: filename of jpg image, or image as read by [\link[jpeg:readJPEG]{jpeg::readJPEG}]}
+\item{img}{string or image: filename of jpg image, or image as read by [\code{\link[jpeg:readJPEG]{jpeg::readJPEG()}}]}
 
-\item{detections}{data.frame: as returned by \link{ovml_yolo_detect}}
+\item{detections}{data.frame: as returned by \code{\link[=ovml_yolo_detect]{ovml_yolo_detect()}}}
 
-\item{line_args}{list: parameters passed to \link{lines} (for \link{ovml_plot}) or [\link[ggplot2:geom_tile]{ggplot2::geom_rect}] (for \link{ovml_ggplot})}
+\item{line_args}{list: parameters passed to \link{lines} (for \code{\link[=ovml_plot]{ovml_plot()}}) or [\code{\link[ggplot2:geom_tile]{ggplot2::geom_rect()}}] (for \code{\link[=ovml_ggplot]{ovml_ggplot()}})}
 
 \item{label_args}{list: parameters passed to \link{text}}
 
-\item{label_geom}{string: for \link{ovml_ggplot}, the geom function to use for labels. Either "text" (use [\link[ggplot2:geom_text]{ggplot2::geom_text}]) or "label" ([\link[ggplot2:geom_text]{ggplot2::geom_label}])}
+\item{label_geom}{string: for \code{\link[=ovml_ggplot]{ovml_ggplot()}}, the geom function to use for labels. Either "text" (use [\code{\link[ggplot2:geom_text]{ggplot2::geom_text()}}]) or "label" ([\code{\link[ggplot2:geom_text]{ggplot2::geom_label()}}])}
 }
 \description{
 Preview plot of detections over image using base graphics

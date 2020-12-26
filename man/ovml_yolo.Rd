@@ -4,27 +4,36 @@
 \alias{ovml_yolo}
 \title{Construct YOLO network}
 \usage{
-ovml_yolo(version = 4, device = "cpu", weights_file = "auto")
+ovml_yolo(version = 4, device = "cpu", weights_file = "auto", class_labels)
 }
 \arguments{
-\item{version}{integer or string: currently 3 (YOLO v3), 4 (YOLO v4), or "4-tiny" (YOLO v4-tiny)}
+\item{version}{integer or string: one of
+\itemize{
+\item 3 : YOLO v3
+\item 4 : YOLO v4
+\item "4-tiny" : YOLO v4-tiny
+}}
 
 \item{device}{string: "cpu" or "cuda"}
 
-\item{weights_file}{string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by \link{ovml_cache_dir}}
+\item{weights_file}{string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by \code{\link[=ovml_cache_dir]{ovml_cache_dir()}}}
+
+\item{class_labels}{character: the class labels used for network training. If missing or NULL, these default to \code{ovml_class_labels("coco")} for all models except "4-mvb", which uses \code{ovml_class_labels("mvb")}}
 }
 \value{
 A YOLO network object
-
+}
+\description{
+Construct YOLO network
+}
+\examples{
 \dontrun{
   dn <- ovml_yolo()
   img <- ovml_example_image()
   res <- ovml_yolo_detect(dn, img)
-  ovml_plot(img, res)
+  ovml_ggplot(img, res)
 }
-}
-\description{
-Construct YOLO network
+
 }
 \references{
 https://github.com/pjreddie/darknet

@@ -4,30 +4,16 @@
 \alias{ovml_yolo_detect}
 \title{Detect objects in image using a YOLO network}
 \usage{
-ovml_yolo_detect(
-  net,
-  image_file,
-  conf = 0.6,
-  nms_conf = 0.4,
-  num_classes = 80,
-  input_image_size,
-  class_labels = ovml_class_labels()
-)
+ovml_yolo_detect(net, image_file, conf = 0.6, nms_conf = 0.4)
 }
 \arguments{
-\item{net}{yolo: as returned by \link{ovml_yolo}}
+\item{net}{yolo: as returned by \code{\link[=ovml_yolo]{ovml_yolo()}}}
 
 \item{image_file}{character: path to one or more image files}
 
 \item{conf}{scalar: confidence level}
 
 \item{nms_conf}{scalar: non-max suppression confidence level}
-
-\item{num_classes}{integer: number of classes that the network was trained on}
-
-\item{input_image_size}{integer: image size expected by the network}
-
-\item{class_labels}{character: the labels corresponding to the class numbers}
 }
 \value{
 A data.frame with columns "image_number", "class", "score", "xmin", "xmax", "ymin", "ymax"
@@ -40,9 +26,9 @@ Detect objects in image using a YOLO network
   dn <- ovml_yolo()
   img <- ovml_example_image()
   res <- ovml_yolo_detect(dn, img)
-  ovml_plot(img, res)
+  ovml_ggplot(img, res)
 }
 }
 \seealso{
-\link{ovml_yolo}
+\code{\link[=ovml_yolo]{ovml_yolo()}}
 }
