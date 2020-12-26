@@ -11,6 +11,7 @@ ovml_cache_dir <- function() {
 
 
 ovml_download_if <- function(url, dest) {
+    if (length(url) < 1 || is.na(url)) stop("no download url provided")
     ## dest is basename of destination file
     weights_file <- file.path(ovml_cache_dir(), dest)
     if (!dir.exists(dirname(weights_file))) dir.create(dirname(weights_file), recursive = TRUE)
