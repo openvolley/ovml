@@ -299,7 +299,14 @@ yolo3_darknet <- nn_module("darknet",
                                  outputs[[i]] <- x
                              }
                          }
-                         result
+                         ## clean some stuff up, R doesn't yet appear to properly release the memory used by libtorch when no longer needed?
+                         out <- as.array(result) ## copy to cpu
+                         for (i in seq_along(outputs)) outputs[[i]] <- torch::torch_zeros(1)
+                         x <- torch::torch_zeros(1)
+                         rm(outputs)
+                         result <- torch::torch_zeros(1)
+                         gc()
+                         out
                      }
                      )
 
@@ -372,6 +379,7 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
             output <- rbind(output, cbind(ind, image_pred_class))
         }
     }
+    colnames(output) <- NULL
     class_num <- output[, 8]
     if (!missing(class_labels) && length(class_labels)) {
         class_label <- rep(NA_character_, length(class_num))
