@@ -24,7 +24,11 @@ object detection algorithm are included. These have been implemented on
 top of the [torch](https://torch.mlverse.org/) R package, meaning that
 no Python installation is required on your system.
 
-The package also includes an experimental network specifically for detecting volleyballs.
+The package also includes an experimental network specifically for
+detecting volleyballs.
+
+**Note:** there are currently memory and GPU issues. It will probably
+crash. You have been warned.
 
 ## Example
 
@@ -55,3 +59,15 @@ ovml_ggplot(img, res)
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />
+
+Note that this network didn’t detect the volleyball (in the process of
+being contacted by the server). Let’s try the experimental
+volleyball-specific network:
+
+``` r
+dn <- ovml_yolo("4-mvb")
+res <- ovml_yolo_detect(dn, img)
+ovml_ggplot(img, res, label_geom = NULL) ## don't add the label, it obscures the volleyball
+```
+
+<img src="man/figures/README-ex4-1.png" width="100%" />

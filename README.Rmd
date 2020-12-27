@@ -34,6 +34,8 @@ Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/) object 
 
 The package also includes an experimental network specifically for detecting volleyballs.
 
+**Note:** there are currently memory and GPU issues. It will probably crash. You have been warned.
+
 ## Example
 
 Use a YOLOv4 network to recognize objects in an image. We use a video frame image (bundled with the package):
@@ -58,3 +60,13 @@ res <- res[res$class %in% c("person", "sports ball"), ]
 ovml_ggplot(img, res)
 
 ```
+
+Note that this network didn't detect the volleyball (in the process of being contacted by the server). Let's try the experimental volleyball-specific network:
+
+```{r ex4}
+dn <- ovml_yolo("4-mvb")
+res <- ovml_yolo_detect(dn, img)
+ovml_ggplot(img, res, label_geom = NULL) ## don't add the label, it obscures the volleyball
+
+```
+
