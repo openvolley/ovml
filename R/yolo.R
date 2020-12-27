@@ -5,7 +5,7 @@
 #' - 3 : YOLO v3
 #' - 4 : YOLO v4
 #' - "4-tiny" : YOLO v4-tiny
-# - "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
+#' - "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
 #'
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir()]
@@ -24,7 +24,7 @@
 #' @export
 ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_labels) {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "4", "4-tiny"))##, "4-mvb"))
+    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -32,34 +32,34 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
         warning("'cuda' device not available, using 'cpu'")
         device <- "cpu"
     }
-    if (version %in% c("3", "4", "4-tiny", "4-mvb")) {
-        if (version == "3") {
+    if (version == "3") {
+        if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
+        dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+        w_url <- "https://pjreddie.com/media/files/yolov3.weights"
+    } else if (version %in% c("4", "4-tiny", "4-mvb")) {
+        dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
+        if (version == "4") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
-            dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
-            w_url <- "https://pjreddie.com/media/files/yolov3.weights"
-        } else if (version %in% c("4", "4-tiny", "4-mvb")) {
-            dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
-            if (version == "4") {
-                if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
-                w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
-            } else if (version == "4-tiny") {
-                if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
-                w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
-            } else {
-                if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
-                w_url <- "https://github.com/openvolley/ovml/releases/download/latest/yolov4-mvb.weights"
-            }
+            w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
+        } else if (version == "4-tiny") {
+            if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
+            w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
+        } else {
+            if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
+            w_url <- "https://github.com/openvolley/ovml/releases/download/latest/yolov4-mvb.weights"
         }
-        dn$class_labels <- class_labels
-        if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
-            if (identical(tolower(weights_file), "auto")) {
-                weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"))
-            }
-            if (file.exists(weights_file)) dn$load_weights(weights_file)
-        }
-        if (device == "cuda") dn$to(torch_device(device))
-        dn$eval()
     }
+    dn$class_labels <- class_labels
+    if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
+        if (identical(tolower(weights_file), "auto")) {
+            weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"))
+        }
+        if (file.exists(weights_file)) {
+            dn$load_weights(weights_file)
+        }
+    }
+    if (device == "cuda") dn$to(torch_device(device))
+    dn$eval() ## set to inference mode
     dn
 }
 
@@ -102,7 +102,7 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4) {
 #'
 #' @param dataset string: which dataset? One of
 #' - "coco" (used with the 3, 4, and "4-tiny" models)
-# - "mvb" (used with the yolov4-mvb model)
+#' - "mvb" (used with the yolov4-mvb model)
 #' @return A character vector of class labels
 #'
 #' @export

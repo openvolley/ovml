@@ -10,6 +10,7 @@ ovml_class_labels(dataset = "coco")
 \item{dataset}{string: which dataset? One of
 \itemize{
 \item "coco" (used with the 3, 4, and "4-tiny" models)
+\item "mvb" (used with the yolov4-mvb model)
 }}
 }
 \value{
