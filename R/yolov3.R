@@ -66,18 +66,17 @@ yolo3_detection_layer <- nn_module("detection_layer",
                                 result$select(2 + dim_off, 0 + dim_off)$sigmoid_()
                                 result$select(2 + dim_off, 1 + dim_off)$sigmoid_()
                                 result$select(2 + dim_off, 4 + dim_off)$sigmoid_()
-                                grid_len <- torch_arange(0, grid_size)
+                                grid_len <- torch_arange(start = 0, end = grid_size, device = self$.device)
                                 args <- torch_meshgrid(list(grid_len, grid_len))
-                                x_offset <- args[[2]]$contiguous()$view(c(-1, 1))
-                                y_offset <- args[[1]]$contiguous()$view(c(-1, 1))
-                                if (self$.device == "cuda") {
-                                    x_offset <- x_offset$cuda()
-                                    y_offset <- y_offset$cuda()
-                                }
+                                x_offset <- args[[2]]$contiguous()$view(c(-1, 1))$to(device = self$.device)
+                                y_offset <- args[[1]]$contiguous()$view(c(-1, 1))$to(device = self$.device)
+                                ##if (self$.device == "cuda") {
+                                ##    x_offset <- x_offset$cuda()
+                                ##    y_offset <- y_offset$cuda()
+                                ##}
                                 x_y_offset <- torch_cat(list(x_offset, y_offset), 1 + dim_off)$`repeat`(c(1, num_anchors))$view(c(-1, 2))$unsqueeze(0 + dim_off)
                                 result$slice(2 + dim_off, 0, 2)$add_(x_y_offset)
-                                anchors_tensor <- torch_tensor(anchors)
-                                if (self$.device == "cuda") anchors_tensor <- anchors_tensor$cuda()
+                                anchors_tensor <- torch_tensor(anchors, device = self$.device)
                                 anchors_tensor <- anchors_tensor$`repeat`(c(grid_size * grid_size, 1))$unsqueeze(0 + dim_off)
                                 result$slice(2 + dim_off, 2, 4)$exp_()$mul_(anchors_tensor)
                                 result$slice(2 + dim_off, 5, 5 + num_classes)$sigmoid_()
@@ -300,11 +299,11 @@ yolo3_darknet <- nn_module("darknet",
                              }
                          }
                          ## clean some stuff up, R doesn't yet appear to properly release the memory used by libtorch when no longer needed?
-                         out <- as.array(result) ## copy to cpu
-                         for (i in seq_along(outputs)) outputs[[i]] <- torch::torch_zeros(1)
-                         x <- torch::torch_zeros(1)
+                         out <- as.array(result$to(device = torch_device("cpu"))) ## copy to cpu
+                         for (i in seq_along(outputs)) outputs[[i]] <- torch::torch_zeros(1, device = self$device)
+                         x <- torch::torch_zeros(1, device = self$device)
                          rm(outputs)
-                         result <- torch::torch_zeros(1)
+                         result <- torch::torch_zeros(1, device = self$device)
                          gc()
                          out
                      }

@@ -203,11 +203,11 @@ yolo4_darknet <- nn_module("darknet",
                              }
                          }
                          ## clean some stuff up, R doesn't yet appear to properly release the memory used by libtorch when no longer needed?
-                         out <- as.array(result) ## copy to cpu
-                         for (i in seq_along(outputs)) outputs[[i]] <- torch::torch_zeros(1)
-                         x <- torch::torch_zeros(1)
+                         out <- as.array(result$to(device = torch_device("cpu"))) ## copy to cpu
+                         for (i in seq_along(outputs)) outputs[[i]] <- torch::torch_zeros(1, device = self$device)
+                         x <- torch::torch_zeros(1, device = self$device)
                          rm(outputs)
-                         result <- torch::torch_zeros(1)
+                         result <- torch::torch_zeros(1, device = self$device)
                          gc()
                          out
                      })

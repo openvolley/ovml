@@ -32,6 +32,8 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
         warning("'cuda' device not available, using 'cpu'")
         device <- "cpu"
     }
+    to_cuda <- device == "cuda"
+    device <- torch_device(device)
     if (version == "3") {
         if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
         dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
@@ -58,7 +60,7 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
             dn$load_weights(weights_file)
         }
     }
-    if (device == "cuda") dn$to(torch_device(device))
+    if (to_cuda) dn$to(device = device)
     dn$eval() ## set to inference mode
     dn
 }
@@ -90,10 +92,11 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4) {
     imgs <- lapply(image_file, function(im) {
         image <- image_read(im) ## h x w x rgb
         resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
-        list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3))), original_wh = image_wh(image))
+        list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)), device = net$device), original_wh = image_wh(image))
     })
     img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)
-    output <- as.array(net$forward(img_tensor))
+    ##if (net$device == "cuda") img_tensor <- img_tensor$to(device = torch_device("cuda"))
+    output <- net$forward(img_tensor)
     owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
     write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels)
 }

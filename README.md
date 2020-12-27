@@ -27,9 +27,6 @@ no Python installation is required on your system.
 The package also includes an experimental network specifically for
 detecting volleyballs.
 
-**Note:** there are currently memory and GPU issues. It will probably
-crash. You have been warned.
-
 ## Example
 
 Use a YOLOv4 network to recognize objects in an image. We use a video
