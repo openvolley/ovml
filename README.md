@@ -24,6 +24,8 @@ object detection algorithm are included. These have been implemented on
 top of the [torch](https://torch.mlverse.org/) R package, meaning that
 no Python installation is required on your system.
 
+The package also includes an experimental network specifically for detecting volleyballs.
+
 ## Example
 
 Use a YOLOv4 network to recognize objects in an image. We use a video
