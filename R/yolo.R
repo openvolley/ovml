@@ -46,7 +46,7 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
             w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
         } else {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
-            w_url <- "https://github.com/openvolley/ovml/releases/download/latest/yolov4-mvb.weights"
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.0.7/yolov4-mvb.weights"
         }
     }
     dn$class_labels <- class_labels
