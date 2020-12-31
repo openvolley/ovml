@@ -248,6 +248,7 @@ yolo3_load_weights <- function(net, blocks, weight_file) {
 
 yolo3_darknet <- nn_module("darknet",
                      initialize = function(cfg_file, device) {
+                         if (!file.exists(cfg_file)) stop("config file does not exist")
                          blocks <- yolo3_read_darknet_cfg(cfg_file)
                          temp <- yolo3_create_darknet_modules(blocks, device) ## create and register modules
                          self$blocks <- temp$blocks
