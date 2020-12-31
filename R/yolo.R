@@ -6,6 +6,7 @@
 #' - 4 : YOLO v4
 #' - "4-tiny" : YOLO v4-tiny
 #' - "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
+#' - "4-tiny-mvb" : the v4-tiny version of the same
 #'
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir()]
@@ -24,7 +25,7 @@
 #' @export
 ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_labels) {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb"))
+    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb", "4-tiny-mvb"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -38,7 +39,7 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
         if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
         dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         w_url <- "https://pjreddie.com/media/files/yolov3.weights"
-    } else if (version %in% c("4", "4-tiny", "4-mvb")) {
+    } else {
         dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         if (version == "4") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
@@ -46,6 +47,9 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
         } else if (version == "4-tiny") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
             w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
+        } else if (version == "4-tiny-mvb") {
+            if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.0.7/yolov4-tiny-mvb.weights"
         } else {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
             w_url <- "https://github.com/openvolley/ovml/releases/download/v0.0.7/yolov4-mvb.weights"
