@@ -27,6 +27,8 @@ no Python installation is required on your system.
 The package also includes an experimental network specifically for
 detecting volleyballs.
 
+This implementation drew from [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3), [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3), [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4), and [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch).
+
 ## Example
 
 Use a YOLOv4 network to recognize objects in an image. We use a video
