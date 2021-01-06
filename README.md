@@ -27,7 +27,11 @@ no Python installation is required on your system.
 The package also includes an experimental network specifically for
 detecting volleyballs.
 
-This implementation drew from [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3), [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3), [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4), and [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch).
+This implementation drew from
+[ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3),
+[walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3),
+[rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4),
+and [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch).
 
 ## Example
 
@@ -52,9 +56,9 @@ dn <- ovml_yolo()
 Now we can use the network to detect objects in our image:
 
 ``` r
-res <- ovml_yolo_detect(dn, img, conf = 0.3)
-res <- res[res$class %in% c("person", "sports ball"), ]
-ovml_ggplot(img, res)
+dets <- ovml_yolo_detect(dn, img, conf = 0.3)
+dets <- dets[dets$class %in% c("person", "sports ball"), ]
+ovml_ggplot(img, dets)
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />
@@ -65,8 +69,79 @@ volleyball-specific network:
 
 ``` r
 dn <- ovml_yolo("4-mvb")
-res <- ovml_yolo_detect(dn, img)
-ovml_ggplot(img, res, label_geom = NULL) ## don't add the label, it obscures the volleyball
+ball_dets <- ovml_yolo_detect(dn, img)
+ovml_ggplot(img, ball_dets, label_geom = NULL) ## don't add the label, it obscures the volleyball
 ```
 
 <img src="man/figures/README-ex4-1.png" width="100%" />
+
+We can transform the image detections to real-world court coordinates.
+First we need to define the court reference points needed for the
+transformation. We can use the `ov_shiny_court_ref` helper app for this:
+
+``` r
+library(ovideo)
+ref <- ov_shiny_court_ref(img)
+```
+
+`ref` should look something like:
+
+``` r
+ref
+#> $antenna
+#> # A tibble: 4 x 4
+#>   image_x image_y antenna where  
+#>     <dbl>   <dbl> <chr>   <chr>  
+#> 1   0.208   0.348 left    floor  
+#> 2   0.82    0.353 right   floor  
+#> 3   0.823   0.641 right   net_top
+#> 4   0.2     0.643 left    net_top
+#> 
+#> $video_width
+#> [1] 1280
+#> 
+#> $video_height
+#> [1] 720
+#> 
+#> $video_framerate
+#> [1] 30
+#> 
+#> $net_height
+#> [1] 2.43
+#> 
+#> $court_ref
+#> # A tibble: 4 x 4
+#>   image_x image_y court_x court_y
+#>     <dbl>   <dbl>   <dbl>   <dbl>
+#> 1  0.0549  0.0221     0.5     0.5
+#> 2  0.953   0.0233     3.5     0.5
+#> 3  0.751   0.52       3.5     6.5
+#> 4  0.289   0.516      0.5     6.5
+```
+
+Now use it with the `ov_transform_points` function (note that currently
+this function expects the image coordinates to be normalized with
+respect to the image width and height):
+
+``` r
+court_xy <- ov_transform_points(x = (dets$xmin + dets$xmax)/2/ref$video_width, y = dets$ymin/ref$video_height,
+                                ref = ref$court_ref, direction = "to_court")
+dets <- cbind(dets, court_xy)
+```
+
+And plot it:
+
+``` r
+library(datavolley)
+library(ggplot2)
+ggplot(dets, aes(x, y)) + ggcourt(labels = NULL, court_colour = "indoor") + geom_point()
+```
+
+<img src="man/figures/README-ex8-1.png" width="100%" />
+
+Keep in mind that `ov_transform_points` is using the middle-bottom of
+each bounding box and transforming it assuming that this represents a
+point on the court surface (the floor). Locations associated with
+truncated object boxes, or objects not on the court surface (players
+jumping, people in elevated positions such as the referee’s stand) will
+appear further away from the camera than they actually are.
