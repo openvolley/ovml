@@ -1,5 +1,5 @@
 dim_off <- 1L ## 0-based dimension indexing in C++/Python, but 1-based dimension indexing here
-YOLO3_LETTERBOXING <- FALSE
+YOLO_LETTERBOXING <- TRUE
 
 yolo3_empty_layer <- nn_module("empty_layer",
                         initialize = function() {},
@@ -389,7 +389,7 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         class_label <- as.character(class_num)
     }
     oh <- original_wh[output[, 1], 2] ## one per output box
-    bb <- rescale_boxes(output[, 2:5, drop = FALSE], original_w = original_wh[output[, 1], 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO3_LETTERBOXING)
+    bb <- rescale_boxes(output[, 2:5, drop = FALSE], original_w = original_wh[output[, 1], 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO_LETTERBOXING)
     ## testing
     ##bb <- output[, 2:5]; oh <- 416L
     data.frame(image_number = output[, 1], class = class_label, score = output[, 7],
@@ -400,12 +400,13 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
 
 rescale_boxes <- function(bboxes, original_w, original_h, input_image_size, letterboxing = TRUE) {
     ## raw predicted bboxes are 416 x 416, so we need to scale them to the aspect-ratio image
-    iwh <- c(original_w, original_h)
+    iwh <- cbind(original_w, original_h)
     if (letterboxing) {
-        sc <- iwh/max(iwh) * input_image_size ## the letterbox size, in pixels
-        sco <- (1-iwh/max(iwh)) / 2 * input_image_size ## the letterbox margins, in pixels
-        bboxes[, c(1, 3)] <- (bboxes[, c(1, 3)] - sco[1]) / sc[1] * original_w
-        bboxes[, c(2, 4)] <- (bboxes[, c(2, 4)] - sco[2]) / sc[2] * original_h
+        iwh <- t(apply(iwh, 1, function(z) z/max(z)))
+        sc <- iwh * input_image_size ## the letterbox size, in pixels
+        sco <- (1-iwh) / 2 * input_image_size ## the letterbox margins, in pixels
+        bboxes[, c(1, 3)] <- (bboxes[, c(1, 3)] - sco[, 1]) / sc[, 1] * original_w
+        bboxes[, c(2, 4)] <- (bboxes[, c(2, 4)] - sco[, 2]) / sc[, 2] * original_h
     } else {
         ## simple scaling from 416 x 416 to original w x h
         bboxes[, c(1, 3)] <- bboxes[, c(1, 3)] / input_image_size * original_w

@@ -95,7 +95,7 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4) {
     if (length(net$class_labels) != net$num_classes) stop("length of class_labels does not match the number of classes")
     imgs <- lapply(image_file, function(im) {
         image <- image_read(im) ## h x w x rgb
-        resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO3_LETTERBOXING), "rgb"))
+        resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO_LETTERBOXING), "rgb"))
         list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)), device = net$device), original_wh = image_wh(image))
     })
     img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)

@@ -59,6 +59,7 @@ Now we can use the network to detect objects in our image:
 dets <- ovml_yolo_detect(dn, img, conf = 0.3)
 dets <- dets[dets$class %in% c("person", "sports ball"), ]
 ovml_ggplot(img, dets)
+#> Warning: Removed 1 rows containing missing values (geom_rect).
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />
