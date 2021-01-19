@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 remotes::install_github("openvolley/ovml")
 ```
 
-The `ovml` package provides image and video machine learning tools for volleyball analytics.
+The `ovml` package provides image and video machine learning tools for volleyball analytics. See also the [opensportml](https://github.com/openvolley/opensportml) for a generalized version of this package for use with other sports.
 
 Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm are included. These have been implemented on top of the [torch](https://torch.mlverse.org/) R package, meaning that no Python installation is required on your system.
 

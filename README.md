@@ -17,7 +17,9 @@ remotes::install_github("openvolley/ovml")
 ```
 
 The `ovml` package provides image and video machine learning tools for
-volleyball analytics.
+volleyball analytics. See also the
+[opensportml](https://github.com/openvolley/opensportml) for a generalized
+version of this package for use with other sports.
 
 Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/)
 object detection algorithm are included. These have been implemented on
