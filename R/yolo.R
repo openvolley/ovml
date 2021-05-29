@@ -35,33 +35,41 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
     }
     to_cuda <- device == "cuda"
     device <- torch_device(device)
+    expected_sha1 <- NULL
     if (version == "3") {
         if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
         dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         w_url <- "https://pjreddie.com/media/files/yolov3.weights"
+        expected_sha1 <- "520878f12e97cf820529daea502acca380f1cb8e"
     } else {
         dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         if (version == "4") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
             w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights"
+            expected_sha1 <- "0143deb6c46fcc7f74dd35bf3c14edc3784e99ee"
         } else if (version == "4-tiny") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
             w_url <- "https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights"
+            expected_sha1 <- "451caaab22fb9831aa1a5ee9b5ba74a35ffa5dcb"
         } else if (version == "4-tiny-mvb") {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
             w_url <- "https://github.com/openvolley/ovml/releases/download/v0.0.7/yolov4-tiny-mvb.weights"
+            expected_sha1 <- "8ef17c371ba0ee0a84e351a40eef83c44e049831"
         } else {
             if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("mvb")
             w_url <- "https://github.com/openvolley/ovml/releases/download/v0.0.7/yolov4-mvb.weights"
+            expected_sha1 <- "7ed27e4a3efd327cc04c596af784d682975d5a3e"
         }
     }
     dn$class_labels <- class_labels
     if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
         if (identical(tolower(weights_file), "auto")) {
-            weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"))
+            weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"), expected_sha1 = expected_sha1)
         }
         if (file.exists(weights_file)) {
             dn$load_weights(weights_file)
+        } else {
+            warning("weights file does not exist")
         }
     }
     if (to_cuda) dn$to(device = device)
