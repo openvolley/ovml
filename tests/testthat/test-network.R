@@ -1,8 +1,10 @@
 context("overall network tests")
 
-dn <- ovml_yolo(version = "4-tiny")
+dn <- NULL
 
 test_that("basic inference", {
+    skip_on_cran()
+    dn <- ovml_yolo(version = "4-tiny")
     img <- ovml_example_image()
     res <- ovml_yolo_detect(dn, img, conf = 0.6)
     expect_true(setequal(res$class, c("person")))
@@ -13,6 +15,8 @@ test_that("basic inference", {
 })
 
 test_that("batch inference", {
+    skip_on_cran()
+    if (is.null(dn)) dn <- ovml_yolo(version = "4-tiny")
     img <- ovml_example_image(c(1, 2))
     res <- ovml_yolo_detect(dn, img)
     expect_true(setequal(res$image_number, 1:2))

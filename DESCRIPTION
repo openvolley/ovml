@@ -1,13 +1,12 @@
 Package: ovml
 Title: Machine Learning Tools for Volleyball
-Version: 0.0.13
+Version: 0.0.14
 Authors@R: c(person("Ben", "Raymond", role = c("aut", "cre"), email = "ben@untan.gl"),
              person("Adrien", "Ickowicz", role = "aut"))
 Description: Image and video machine learning tools, for application to volleyball analytics.
 Depends: R (>= 3.3.0)
 Imports:
   assertthat,
-  bit,
   curl,
   digest,
   ggplot2,
@@ -15,7 +14,6 @@ Imports:
   magick,
   magrittr,
   rappdirs,
-  tibble,
   torch
 Suggests:
   jpeg,
