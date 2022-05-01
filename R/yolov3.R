@@ -68,7 +68,7 @@ yolo3_detection_layer <- nn_module("detection_layer",
                                 result$select(2 + dim_off, 4 + dim_off)$sigmoid_()
                                 grid_len <- torch_arange(start = 0, end = grid_size - if (packageVersion("torch") >= "0.3.0") 1L else 0L, device = self$.device)
                                 ## see https://github.com/mlverse/torch/issues/472, breaking change in torch 0.3.0: torch_arange returns in the closed interval [start, end] instead of the half open [start, end). This makes it behave similar to R's seq. (#506)
-                                args <- torch_meshgrid(list(grid_len, grid_len))
+                                args <- torch_meshgrid(list(grid_len, grid_len), indexing = "ij")
                                 x_offset <- args[[2]]$contiguous()$view(c(-1, 1))$to(device = self$.device)
                                 y_offset <- args[[1]]$contiguous()$view(c(-1, 1))$to(device = self$.device)
                                 ##if (self$.device == "cuda") {
