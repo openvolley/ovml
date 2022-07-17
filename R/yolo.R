@@ -45,7 +45,7 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
         expected_sha1 <- "520878f12e97cf820529daea502acca380f1cb8e"
     } else if (version == "7") {
         if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
-        w_url <- "https://github.com/openvolley/ovml/releases/download/yolov7.torchscript.pt"
+        w_url <- "https://github.com/openvolley/ovml/releases/download/yolov7/yolov7.torchscript.pt"
         expected_sha1 <- "d8da940cd8175c2c670ad5ac86f5547b6f80c095"
         from_jit <- TRUE
         dn <- NULL
