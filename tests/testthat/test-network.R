@@ -11,7 +11,7 @@ test_that("basic inference", {
     res <- ovml_yolo_detect(dn, img, conf = 0.1)
     expect_true(setequal(res$class, c("person", "backpack")))
     res <- ovml_yolo_detect(dn, img, conf = 0.05)
-    expect_true(setequal(res$class, c("backpack", "bench", "chair", "handbag", "person", "traffic light")))
+    expect_true(setequal(res$class, c("backpack", "person", "traffic light")))
 })
 
 test_that("batch inference", {
