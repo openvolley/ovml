@@ -4,10 +4,10 @@
 #' @param version integer or string: one of
 #' - 3 : YOLO v3
 #' - 4 : YOLO v4
-#' - 7 : YOLO v7
 #' - "4-tiny" : YOLO v4-tiny
 #' - "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
 #' - "4-tiny-mvb" : the v4-tiny version of the same
+#' - 7 or "7-tiny" : YOLO v7 or v7-tiny
 #'
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir()]
@@ -26,7 +26,7 @@
 #' @export
 ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class_labels) {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb", "4-tiny-mvb", "7"))
+    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb", "4-tiny-mvb", "7", "7-tiny", "7-mvb", "7-tiny-mvb"))
     assert_that(is.string(device))
     device_was_specified <- !missing(device)
     device <- tolower(device)
@@ -44,10 +44,24 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
         dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         w_url <- "https://pjreddie.com/media/files/yolov3.weights"
         expected_sha1 <- "520878f12e97cf820529daea502acca380f1cb8e"
-    } else if (version == "7") {
-        if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
-        w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7.torchscript.pt"
-        expected_sha1 <- "d8da940cd8175c2c670ad5ac86f5547b6f80c095"
+    } else if (version %in% c("7", "7-mvb", "7-tiny", "7-tiny-mvb")) {
+        if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) {
+            class_labels <- ovml_class_labels(if (grepl("mvb", version)) "mvb" else "coco")
+        }
+        if (version == "7") {
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7.torchscript.pt"
+            expected_sha1 <- "d8da940cd8175c2c670ad5ac86f5547b6f80c095"
+        } else if (version == "7-tiny") {
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7-tiny.torchscript.pt"
+            expected_sha1 <- "464a6f80b42b9800ff14d8693a218b4d25f36d31"
+        } else if (version == "7-tiny-mvb") {
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7-tiny-mvb.torchscript.pt"
+            expected_sha1 <- NULL ## to add
+        } else {
+            ## "7-mvb"
+            w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7-mvb.torchscript.pt"
+            expected_sha1 <- NULL ## to add
+        }
         from_jit <- TRUE
         dn <- NULL
     } else {

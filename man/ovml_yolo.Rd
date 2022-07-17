@@ -11,10 +11,10 @@ ovml_yolo(version = 4, device = "cuda", weights_file = "auto", class_labels)
 \itemize{
 \item 3 : YOLO v3
 \item 4 : YOLO v4
-\item 7 : YOLO v7
 \item "4-tiny" : YOLO v4-tiny
 \item "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
 \item "4-tiny-mvb" : the v4-tiny version of the same
+\item 7 or "7-tiny" : YOLO v7 or v7-tiny
 }}
 
 \item{device}{string: "cpu" or "cuda"}
