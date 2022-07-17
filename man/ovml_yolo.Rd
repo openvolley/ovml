@@ -4,7 +4,7 @@
 \alias{ovml_yolo}
 \title{Construct YOLO network}
 \usage{
-ovml_yolo(version = 4, device = "cpu", weights_file = "auto", class_labels)
+ovml_yolo(version = 4, device = "cuda", weights_file = "auto", class_labels)
 }
 \arguments{
 \item{version}{integer or string: one of
