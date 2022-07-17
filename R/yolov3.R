@@ -407,7 +407,7 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
     bb <- rescale_boxes(output[, 2:5, drop = FALSE], original_w = original_wh[output[, 1], 1], original_h = oh, input_image_size = input_image_size, letterboxing = YOLO_LETTERBOXING)
     ## testing
     ##bb <- output[, 2:5]; oh <- 416L
-    data.frame(image_number = output[, 1], class = class_label, score = output[, 7],
+    data.frame(image_number = output[, 1], class = class_label, score = output[, 6],
                xmin = bb[, 1] + 1, xmax = bb[, 3] + 1,
                ymin = oh + 1 - bb[, 4],
                ymax = oh + 1 - bb[, 2], stringsAsFactors = FALSE)
