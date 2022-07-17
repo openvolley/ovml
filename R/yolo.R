@@ -1,16 +1,17 @@
 #' Construct YOLO network
 #'
-#' @references https://github.com/pjreddie/darknet
+#' @references https://github.com/pjreddie/darknet, https://github.com/WongKinYiu/yolov7
 #' @param version integer or string: one of
 #' - 3 : YOLO v3
 #' - 4 : YOLO v4
+#' - 7 : YOLO v7
 #' - "4-tiny" : YOLO v4-tiny
 #' - "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
 #' - "4-tiny-mvb" : the v4-tiny version of the same
 #'
 #' @param device string: "cpu" or "cuda"
 #' @param weights_file string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by [ovml_cache_dir()]
-#' @param class_labels character: the class labels used for network training. If missing or NULL, these default to `ovml_class_labels("coco")` for all models except "4-mvb", which uses `ovml_class_labels("mvb")`
+#' @param class_labels character: the class labels used for network training. If missing or NULL, these default to `ovml_class_labels("coco")` for all models except "mvb" models, which use `ovml_class_labels("mvb")`
 #'
 #' @return A YOLO network object
 #'
@@ -25,7 +26,7 @@
 #' @export
 ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_labels) {
     if (is.numeric(version)) version <- as.character(version)
-    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb", "4-tiny-mvb"))
+    assert_that(version %in% c("3", "4", "4-tiny", "4-mvb", "4-tiny-mvb", "7"))
     assert_that(is.string(device))
     device <- tolower(device)
     device <- match.arg(device, c("cpu", "cuda"))
@@ -36,11 +37,18 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
     to_cuda <- device == "cuda"
     device <- torch_device(device)
     expected_sha1 <- NULL
+    from_jit <- FALSE
     if (version == "3") {
         if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
         dn <- yolo3_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         w_url <- "https://pjreddie.com/media/files/yolov3.weights"
         expected_sha1 <- "520878f12e97cf820529daea502acca380f1cb8e"
+    } else if (version == "7") {
+        if (missing(class_labels) || length(class_labels) < 1 || is.na(class_labels)) class_labels <- ovml_class_labels("coco")
+        w_url <- "https://github.com/openvolley/ovml/releases/download/yolov7.torchscript.pt"
+        expected_sha1 <- "d8da940cd8175c2c670ad5ac86f5547b6f80c095"
+        from_jit <- TRUE
+        dn <- NULL
     } else {
         dn <- yolo4_darknet(system.file(paste0("extdata/yolo/yolov", version, ".cfg"), package = "ovml"), device = device)
         if (version == "4") {
@@ -61,17 +69,25 @@ ovml_yolo <- function(version = 4, device = "cpu", weights_file = "auto", class_
             expected_sha1 <- "7ed27e4a3efd327cc04c596af784d682975d5a3e"
         }
     }
-    dn$class_labels <- class_labels
     if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
         if (identical(tolower(weights_file), "auto")) {
             weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"), expected_sha1 = expected_sha1)
         }
         if (file.exists(weights_file)) {
-            dn$load_weights(weights_file)
+            if (!from_jit) {
+                dn$load_weights(weights_file)
+            } else {
+                dn <- torch::jit_load(weights_file)
+                ## some bits to make other code work as-is
+                dn$num_classes <- length(class_labels)
+                dn$blocks <- list(list(height = 640L))
+                dn$from_jit <- TRUE
+            }
         } else {
             warning("weights file does not exist")
         }
     }
+    dn$class_labels <- class_labels
     if (to_cuda) dn$to(device = device)
     dn$eval() ## set to inference mode
     dn
@@ -109,6 +125,7 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4) {
     img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)
     ##if (net$device == "cuda") img_tensor <- img_tensor$to(device = torch_device("cuda"))
     output <- net$forward(img_tensor)
+    if (isTRUE(net$from_jit)) output <- as.array(output[[1]]$to(device = torch_device("cpu"))) ## copy to cpu
     owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
     write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels)
 }

@@ -11,6 +11,7 @@ ovml_yolo(version = 4, device = "cpu", weights_file = "auto", class_labels)
 \itemize{
 \item 3 : YOLO v3
 \item 4 : YOLO v4
+\item 7 : YOLO v7
 \item "4-tiny" : YOLO v4-tiny
 \item "4-mvb" : an experimental network trained specifically to detect (only) volleyballs
 \item "4-tiny-mvb" : the v4-tiny version of the same
@@ -20,7 +21,7 @@ ovml_yolo(version = 4, device = "cpu", weights_file = "auto", class_labels)
 
 \item{weights_file}{string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by \code{\link[=ovml_cache_dir]{ovml_cache_dir()}}}
 
-\item{class_labels}{character: the class labels used for network training. If missing or NULL, these default to \code{ovml_class_labels("coco")} for all models except "4-mvb", which uses \code{ovml_class_labels("mvb")}}
+\item{class_labels}{character: the class labels used for network training. If missing or NULL, these default to \code{ovml_class_labels("coco")} for all models except "mvb" models, which use \code{ovml_class_labels("mvb")}}
 }
 \value{
 A YOLO network object
@@ -38,5 +39,5 @@ Construct YOLO network
 
 }
 \references{
-https://github.com/pjreddie/darknet
+https://github.com/pjreddie/darknet, https://github.com/WongKinYiu/yolov7
 }

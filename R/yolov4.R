@@ -147,6 +147,7 @@ yolo4_darknet <- nn_module("darknet",
                          if (!file.exists(cfg_file)) stop("config file does not exist")
                          blocks <- yolo3_read_darknet_cfg(cfg_file)
                          temp <- yolo4_create_darknet_modules(blocks, device) ## create and register modules
+                         self$from_jit <- FALSE
                          self$blocks <- temp$blocks
                          self$net <- temp$net
                          self$device <- device

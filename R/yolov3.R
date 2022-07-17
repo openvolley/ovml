@@ -252,6 +252,7 @@ yolo3_darknet <- nn_module("darknet",
                          if (!file.exists(cfg_file)) stop("config file does not exist")
                          blocks <- yolo3_read_darknet_cfg(cfg_file)
                          temp <- yolo3_create_darknet_modules(blocks, device) ## create and register modules
+                         self$from_jit <- FALSE
                          self$blocks <- temp$blocks
                          self$net <- temp$net
                          self$device <- device
@@ -328,16 +329,8 @@ bbox_iou <- function(box1, box2) {
     inter_area / (b1_area + b2_area - inter_area)
 }
 
-## apply nms and convert results matrix
-## original_wh should be an n x 2 matrix for n images
-write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 0.4, original_wh, input_image_size, class_labels) {
-    if (is.null(dim(original_wh))) original_wh <- matrix(original_wh, ncol = 2, byrow = TRUE)
-    if (nrow(original_wh) != dim(prediction)[1]) {
-        stop("number of images in prediction tensor does not match the number of rows in original_wh")
-    }
-    if (missing(num_classes)) num_classes <- dim(prediction)[3] - 5
-    mask_idx <- prediction[, , 5] > confidence
-    if (!any(mask_idx)) return(data.frame(class = character(), score = numeric(), xmin = numeric(), xmax = numeric(), ymin = numeric(), ymax = numeric(), stringsAsFactors = FALSE))
+
+xywh2box <- function(prediction) {
     ## coords in predictions are xmid, ymid, width, height
     box_corner <- array(dim = c(dim(prediction)[1:2], 4))
     box_corner[, , 1] <- prediction[, , 1] - prediction[, , 3]/2 ## xmin
@@ -345,6 +338,11 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
     box_corner[, , 3] <- prediction[, , 1] + prediction[, , 3]/2 ## xmax
     box_corner[, , 4] <- prediction[, , 2] + prediction[, , 4]/2 ## ymax
     prediction[, , 1:4] <- box_corner
+    prediction
+}
+
+do_nms <- function(prediction, confidence = 0.6, nms_conf = 0.4, num_classes) {
+    if (missing(num_classes)) num_classes <- dim(prediction)[3] - 5
     batch_size <- dim(prediction)[1] ## number of images in batch
     output <- matrix(nrow = 0, ncol = 8)
     for (ind in seq_len(batch_size)) {
@@ -352,8 +350,9 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         ##confidence thresholding
         ##NMS
         max_conf <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, max)
-        max_conf_score <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, which.max) ## indices
-        image_pred <- cbind(image_pred[, 1:5, drop = FALSE], max_conf, max_conf_score)
+        max_conf_class <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, which.max) ## indices
+        image_pred <- cbind(image_pred[, 1:5, drop = FALSE], max_conf, max_conf_class)
+        image_pred[, 5] <- image_pred[, 5] * image_pred[, 6] ## scale class confidence by object confidence
         image_pred_ <- image_pred[image_pred[, 5] > confidence, , drop = FALSE]
         if (nrow(image_pred_) < 1) next
         ## Get the various classes detected in the image
@@ -381,6 +380,21 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
         }
     }
     colnames(output) <- NULL
+    output
+}
+
+## apply nms and convert results matrix
+## original_wh should be an n x 2 matrix for n images
+write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 0.4, original_wh, input_image_size, class_labels) {
+    if (is.null(dim(original_wh))) original_wh <- matrix(original_wh, ncol = 2, byrow = TRUE)
+    if (nrow(original_wh) != dim(prediction)[1]) {
+        stop("number of images in prediction tensor does not match the number of rows in original_wh")
+    }
+    if (missing(num_classes)) num_classes <- dim(prediction)[3] - 5
+    mask_idx <- prediction[, , 5] > confidence
+    if (!any(mask_idx)) return(data.frame(class = character(), score = numeric(), xmin = numeric(), xmax = numeric(), ymin = numeric(), ymax = numeric(), stringsAsFactors = FALSE))
+    prediction <- xywh2box(prediction)
+    output <- do_nms(prediction, confidence = confidence, nms_conf = nms_conf, num_classes = num_classes)
     class_num <- output[, 8]
     if (!missing(class_labels) && length(class_labels)) {
         class_label <- rep(NA_character_, length(class_num))
