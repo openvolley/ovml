@@ -23,10 +23,11 @@ volleyball analytics. See also the
 [opensportml](https://github.com/openvolley/opensportml) for a
 generalized version of this package for use with other sports.
 
-Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/)
-object detection algorithm are included. These have been implemented on
-top of the [torch](https://torch.mlverse.org/) R package, meaning that
-no Python installation is required on your system.
+Currently three versions of the
+[YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm
+are included (versions 3, 4, and 7). These have been implemented on top
+of the [torch](https://torch.mlverse.org/) R package, meaning that no
+Python installation is required on your system.
 
 The package also includes an experimental network specifically for
 detecting volleyballs.
@@ -35,7 +36,8 @@ This implementation drew from
 [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3),
 [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3),
 [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4),
-and [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch).
+[gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch), and
+[WongKinYiu/yolov7](https://github.com/WongKinYiu/yolov7).
 
 ## Example
 
@@ -63,7 +65,6 @@ Now we can use the network to detect objects in our image:
 dets <- ovml_yolo_detect(dn, img, conf = 0.3)
 dets <- dets[dets$class %in% c("person", "sports ball"), ]
 ovml_ggplot(img, dets)
-#> Warning: Removed 1 rows containing missing values (geom_rect).
 ```
 
 <img src="man/figures/README-ex3-1.png" width="100%" />
@@ -94,7 +95,7 @@ ref <- ov_shiny_court_ref(img)
 ``` r
 ref
 #> $antenna
-#> # A tibble: 4 x 4
+#> # A tibble: 4 × 4
 #>   image_x image_y antenna where  
 #>     <dbl>   <dbl> <chr>   <chr>  
 #> 1   0.208   0.348 left    floor  
@@ -115,7 +116,7 @@ ref
 #> [1] 2.43
 #> 
 #> $court_ref
-#> # A tibble: 4 x 4
+#> # A tibble: 4 × 4
 #>   image_x image_y court_x court_y
 #>     <dbl>   <dbl>   <dbl>   <dbl>
 #> 1  0.0549  0.0221     0.5     0.5

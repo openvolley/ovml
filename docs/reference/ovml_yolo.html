@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ovml</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.0.15</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
       </span>
     </div>
 
@@ -44,7 +44,7 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">ovml_yolo</span><span class="op">(</span>version <span class="op">=</span> <span class="fl">4</span>, device <span class="op">=</span> <span class="st">"cpu"</span>, weights_file <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">class_labels</span><span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">ovml_yolo</span><span class="op">(</span>version <span class="op">=</span> <span class="fl">4</span>, device <span class="op">=</span> <span class="st">"cuda"</span>, weights_file <span class="op">=</span> <span class="st">"auto"</span>, <span class="va">class_labels</span><span class="op">)</span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -52,6 +52,7 @@
     <dl><dt>version</dt>
 <dd><p>integer or string: one of</p><ul><li><p>3 : YOLO v3</p></li>
 <li><p>4 : YOLO v4</p></li>
+<li><p>7 : YOLO v7</p></li>
 <li><p>"4-tiny" : YOLO v4-tiny</p></li>
 <li><p>"4-mvb" : an experimental network trained specifically to detect (only) volleyballs</p></li>
 <li><p>"4-tiny-mvb" : the v4-tiny version of the same</p></li>
@@ -61,7 +62,7 @@
 <dt>weights_file</dt>
 <dd><p>string: either the path to the weights file that already exists on your system or "auto". If "auto", the weights file will be downloaded if necessary and stored in the directory given by <code><a href="ovml_cache_dir.html">ovml_cache_dir()</a></code></p></dd>
 <dt>class_labels</dt>
-<dd><p>character: the class labels used for network training. If missing or NULL, these default to <code>ovml_class_labels("coco")</code> for all models except "4-mvb", which uses <code>ovml_class_labels("mvb")</code></p></dd>
+<dd><p>character: the class labels used for network training. If missing or NULL, these default to <code>ovml_class_labels("coco")</code> for all models except "mvb" models, which use <code>ovml_class_labels("mvb")</code></p></dd>
 </dl></div>
     <div id="value">
     <h2>Value</h2>
@@ -69,7 +70,7 @@
     </div>
     <div id="references">
     <h2>References</h2>
-    <p>https://github.com/pjreddie/darknet</p>
+    <p>https://github.com/pjreddie/darknet, https://github.com/WongKinYiu/yolov7</p>
     </div>
 
     <div id="ref-examples">
@@ -95,8 +96,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a>
-2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
 </div>
 
       </footer></div>

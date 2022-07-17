@@ -31,11 +31,11 @@ remotes::install_github("openvolley/ovml")
 
 The `ovml` package provides image and video machine learning tools for volleyball analytics. See also the [opensportml](https://github.com/openvolley/opensportml) for a generalized version of this package for use with other sports.
 
-Currently two versions of the [YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm are included. These have been implemented on top of the [torch](https://torch.mlverse.org/) R package, meaning that no Python installation is required on your system.
+Currently three versions of the [YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm are included (versions 3, 4, and 7). These have been implemented on top of the [torch](https://torch.mlverse.org/) R package, meaning that no Python installation is required on your system.
 
 The package also includes an experimental network specifically for detecting volleyballs.
 
-This implementation drew from [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3), [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3), [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4), and [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch).
+This implementation drew from [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3), [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3), [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4), [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch), and [WongKinYiu/yolov7](https://github.com/WongKinYiu/yolov7).
 
 ## Example
 
