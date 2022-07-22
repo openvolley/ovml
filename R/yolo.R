@@ -110,12 +110,15 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 
 #' Detect objects in image using a YOLO network
 #'
+#' Processing of a video file requires that `ffmpeg` be installed on your system. [ovideo::ov_install_ffmpeg()] can help with this on Windows and Linux.
+#'
 #' @param net yolo: as returned by [ovml_yolo()]
-#' @param image_file character: path to one or more image files
+#' @param image_file character: path to one or more image files, or a single video file (mp4, m4v, or mov extension)
 #' @param conf scalar: confidence level
 #' @param nms_conf scalar: non-max suppression confidence level
+#' @param batch_size integer: the number of images to process as a batch. Increasing `batch_size` will make processing of multiple images faster, but requires more memory
 #'
-#' @return A data.frame with columns "image_number", "class", "score", "xmin", "xmax", "ymin", "ymax"
+#' @return A data.frame with columns "image_number", "image_file", "class", "score", "xmin", "xmax", "ymin", "ymax"
 #'
 #' @seealso [ovml_yolo()]
 #'
@@ -127,22 +130,47 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #'   ovml_ggplot(img, res)
 #' }
 #' @export
-ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4) {
+ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, batch_size = 4) {
     input_image_size <- as.integer(net$blocks[[1]]$height)
     if (length(input_image_size) < 1 || is.na(input_image_size) || input_image_size <= 0) stop("invalid input_image_size: ", input_image_size)
     if (length(net$num_classes) < 1 || is.na(net$num_classes)) stop("invalid number of classes")
     if (length(net$class_labels) != net$num_classes) stop("length of class_labels does not match the number of classes")
-    imgs <- lapply(image_file, function(im) {
-        image <- image_read(im) ## h x w x rgb
-        resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO_LETTERBOXING), "rgb"))
-        list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)), device = net$device), original_wh = image_wh(image))
-    })
-    img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)
-    ##if (net$device == "cuda") img_tensor <- img_tensor$to(device = torch_device("cuda"))
-    output <- net$forward(img_tensor)
-    if (isTRUE(net$from_jit)) output <- as.array(output[[1]]$to(device = torch_device("cpu"))) ## copy to cpu
-    owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
-    write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels)
+    if (any(grepl("\\.(mp4|m4v|mov)$", image_file, ignore.case = TRUE))) {
+        if (length(image_file) == 1) {
+            ## single video file, extract all frames
+            image_file <- ov_video_frames(image_file)
+            ## could also use av::av_video_images ?
+        } else {
+            stop("only a single video file can be processed")
+        }
+    }
+    starti <- seq(1, length(image_file), by = batch_size)
+    endi <- pmin(starti + batch_size - 1L, length(image_file))
+    do.call(rbind, lapply(seq_along(starti), function(i) {
+        ##st <- system.time({
+        this_image_files <- image_file[starti[i]:endi[i]]
+        imgs <- lapply(this_image_files, function(im) {
+            image <- image_read(im) ## h x w x rgb
+            resized_image <- as.numeric(image_data(image_resz(image, input_image_size, preserve_aspect = YOLO_LETTERBOXING), "rgb"))
+            list(tensor = torch_tensor(aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)), device = net$device), original_wh = image_wh(image))
+        })
+        img_tensor <- torch_cat(lapply(imgs, function(z) z$tensor), dim = 1)
+        ##}); cat("prep:\n"); print(st)
+        ##if (net$device == "cuda") img_tensor <- img_tensor$to(device = torch_device("cuda"))
+        ##st <- system.time({
+            output <- net$forward(img_tensor)
+        ##}); cat("inference:\n"); print(st)
+        ##st <- system.time({
+            if (isTRUE(net$from_jit)) output <- as.array(output[[1]]$to(device = torch_device("cpu"))) ## copy to cpu
+        ##}); cat("data copy:\n"); print(st)
+        owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
+        ##st <- system.time({
+            res <- write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels)
+            res$image_file <- this_image_files[res$image_number]
+            res$image_number <- as.integer(res$image_number + starti[i] - 1L)
+        ##}); cat("results:\n"); print(st)
+        res
+    }))
 }
 
 #' Class labels

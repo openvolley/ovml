@@ -4,22 +4,24 @@
 \alias{ovml_yolo_detect}
 \title{Detect objects in image using a YOLO network}
 \usage{
-ovml_yolo_detect(net, image_file, conf = 0.6, nms_conf = 0.4)
+ovml_yolo_detect(net, image_file, conf = 0.6, nms_conf = 0.4, batch_size = 4)
 }
 \arguments{
 \item{net}{yolo: as returned by \code{\link[=ovml_yolo]{ovml_yolo()}}}
 
-\item{image_file}{character: path to one or more image files}
+\item{image_file}{character: path to one or more image files, or a single video file (mp4, m4v, or mov extension)}
 
 \item{conf}{scalar: confidence level}
 
 \item{nms_conf}{scalar: non-max suppression confidence level}
+
+\item{batch_size}{integer: the number of images to process as a batch. Increasing \code{batch_size} will make processing of multiple images faster, but requires more memory}
 }
 \value{
-A data.frame with columns "image_number", "class", "score", "xmin", "xmax", "ymin", "ymax"
+A data.frame with columns "image_number", "image_file", "class", "score", "xmin", "xmax", "ymin", "ymax"
 }
 \description{
-Detect objects in image using a YOLO network
+Processing of a video file requires that \code{ffmpeg} be installed on your system. \code{\link[ovideo:ov_install_ffmpeg]{ovideo::ov_install_ffmpeg()}} can help with this on Windows and Linux.
 }
 \examples{
 \dontrun{
