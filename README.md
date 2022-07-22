@@ -29,6 +29,16 @@ are included (versions 3, 4, and 7). These have been implemented on top
 of the [torch](https://torch.mlverse.org/) R package, meaning that no
 Python installation is required on your system.
 
+**NOTE:** the performance of this package is substantially slower than
+the equivalent native C++/Python implementations. This is a known
+limitation of the R torch package (see
+e.g. <https://github.com/mlverse/torch/issues/694>,
+<https://github.com/mlverse/torch/issues/268>) and improvements are
+expected over time. Nevertheless, this R package provides a convenient
+mechanism for R users to apply these algorithms without requiring Python
+(perhaps best suited to analyses of small numbers of images or
+non-time-critical applications).
+
 The package also includes an experimental network specifically for
 detecting volleyballs.
 
@@ -141,6 +151,7 @@ And plot it:
 ``` r
 library(datavolley)
 library(ggplot2)
+#> Keep up to date with changes at https://www.tidyverse.org/blog/
 ggplot(dets, aes(x, y)) + ggcourt(labels = NULL, court_colour = "indoor") + geom_point()
 ```
 

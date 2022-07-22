@@ -33,6 +33,8 @@ The `ovml` package provides image and video machine learning tools for volleybal
 
 Currently three versions of the [YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm are included (versions 3, 4, and 7). These have been implemented on top of the [torch](https://torch.mlverse.org/) R package, meaning that no Python installation is required on your system.
 
+**NOTE:** the performance of this package is substantially slower than the equivalent native C++/Python implementations. This is a known limitation of the R torch package (see e.g. https://github.com/mlverse/torch/issues/694, https://github.com/mlverse/torch/issues/268) and improvements are expected over time. Nevertheless, this R package provides a convenient mechanism for R users to apply these algorithms without requiring Python (perhaps best suited to analyses of small numbers of images or non-time-critical applications).
+
 The package also includes an experimental network specifically for detecting volleyballs.
 
 This implementation drew from [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3), [walktree/libtorch-yolov3](https://github.com/walktree/libtorch-yolov3), [rockyzhengwu/libtorch-yolov4](https://github.com/rockyzhengwu/libtorch-yolov4), [gwinndr/YOLOv4-Pytorch](https://github.com/gwinndr/YOLOv4-Pytorch), and [WongKinYiu/yolov7](https://github.com/WongKinYiu/yolov7).
