@@ -12,3 +12,6 @@ ovml.common::ovml_ggplot
 
 #' @export
 ovml.common::ovml_cache_dir
+
+#' @export
+ovml.common::ovml_class_labels

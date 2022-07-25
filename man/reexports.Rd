@@ -8,6 +8,7 @@
 \alias{ovml_plot}
 \alias{ovml_ggplot}
 \alias{ovml_cache_dir}
+\alias{ovml_class_labels}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -17,6 +18,6 @@ below to see their documentation.
 \describe{
   \item{magrittr}{\code{\link[magrittr:pipe]{\%>\%}}}
 
-  \item{ovml.common}{\code{\link[ovml.common]{ovml_cache_dir}}, \code{\link[ovml.common]{ovml_example_image}}, \code{\link[ovml.common:ovml_plot]{ovml_ggplot}}, \code{\link[ovml.common]{ovml_plot}}}
+  \item{ovml.common}{\code{\link[ovml.common]{ovml_cache_dir}}, \code{\link[ovml.common]{ovml_class_labels}}, \code{\link[ovml.common]{ovml_example_image}}, \code{\link[ovml.common:ovml_plot]{ovml_ggplot}}, \code{\link[ovml.common]{ovml_plot}}}
 }}
 
