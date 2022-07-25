@@ -4,7 +4,14 @@
 \alias{ovml_yolo_detect}
 \title{Detect objects in image using a YOLO network}
 \usage{
-ovml_yolo_detect(net, image_file, conf = 0.6, nms_conf = 0.4, batch_size = 4)
+ovml_yolo_detect(
+  net,
+  image_file,
+  conf = 0.6,
+  nms_conf = 0.4,
+  classes,
+  batch_size = 4
+)
 }
 \arguments{
 \item{net}{yolo: as returned by \code{\link[=ovml_yolo]{ovml_yolo()}}}
@@ -14,6 +21,8 @@ ovml_yolo_detect(net, image_file, conf = 0.6, nms_conf = 0.4, batch_size = 4)
 \item{conf}{scalar: confidence level}
 
 \item{nms_conf}{scalar: non-max suppression confidence level}
+
+\item{classes}{character: vector of class names, only detections of these classes will be returned}
 
 \item{batch_size}{integer: the number of images to process as a batch. Increasing \code{batch_size} will make processing of multiple images faster, but requires more memory}
 }

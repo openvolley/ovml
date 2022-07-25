@@ -341,7 +341,7 @@ xywh2box <- function(prediction) {
     prediction
 }
 
-do_nms <- function(prediction, confidence = 0.6, nms_conf = 0.4, num_classes) {
+do_nms <- function(prediction, confidence = 0.6, nms_conf = 0.4, num_classes, classes = NULL) {
     if (missing(num_classes)) num_classes <- dim(prediction)[3] - 5
     batch_size <- dim(prediction)[1] ## number of images in batch
     output <- matrix(nrow = 0, ncol = 8)
@@ -353,14 +353,20 @@ do_nms <- function(prediction, confidence = 0.6, nms_conf = 0.4, num_classes) {
         max_conf_class <- apply(image_pred[, 6:(num_classes + 5), drop = FALSE], 1, which.max) ## indices
         image_pred <- cbind(image_pred[, 1:5, drop = FALSE], max_conf, max_conf_class)
         image_pred[, 5] <- image_pred[, 5] * image_pred[, 6] ## scale class confidence by object confidence
-        image_pred_ <- image_pred[image_pred[, 5] > confidence, , drop = FALSE]
-        if (nrow(image_pred_) < 1) next
+        ## ignore unwanted classes
+        if (length(classes) > 0) {
+            ## 0-based class numbers to include
+            image_pred <- image_pred[(image_pred[, 7] %in% classes) & (image_pred[, 5] > confidence), , drop = FALSE]
+        } else {
+            image_pred <- image_pred[image_pred[, 5] > confidence, , drop = FALSE]
+        }
+        if (nrow(image_pred) < 1) next
         ## Get the various classes detected in the image
-        img_classes <- unique(image_pred_[, 7])
+        img_classes <- unique(image_pred[, 7])
         for (cls in img_classes) {
             ## perform NMS
             ## get the detections with one particular class
-            image_pred_class <- image_pred_[image_pred_[, 7] == cls, , drop = FALSE]
+            image_pred_class <- image_pred[image_pred[, 7] == cls, , drop = FALSE]
             ##sort the detections such that the entry with the maximum objectness
             ##confidence is at the top
             image_pred_class <- image_pred_class[order(image_pred_class[, 5], decreasing = TRUE), , drop = FALSE]
@@ -385,7 +391,11 @@ do_nms <- function(prediction, confidence = 0.6, nms_conf = 0.4, num_classes) {
 
 ## apply nms and convert results matrix
 ## original_wh should be an n x 2 matrix for n images
-write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 0.4, original_wh, input_image_size, class_labels) {
+write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 0.4, original_wh, input_image_size, class_labels, classes = NULL) {
+    ## classes should be NULL (include all classes) or a vector of class names
+    if (!missing(classes) && length(classes) > 0 && !missing(class_labels)) {
+        if (is.character(classes)) classes <- which(class_labels %in% classes) - 1L ## 0-based
+    }
     if (is.null(dim(original_wh))) original_wh <- matrix(original_wh, ncol = 2, byrow = TRUE)
     if (nrow(original_wh) != dim(prediction)[1]) {
         stop("number of images in prediction tensor does not match the number of rows in original_wh")
@@ -394,7 +404,7 @@ write_results <- function(prediction, num_classes, confidence = 0.6, nms_conf = 
     mask_idx <- prediction[, , 5] > confidence
     if (!any(mask_idx)) return(data.frame(class = character(), score = numeric(), xmin = numeric(), xmax = numeric(), ymin = numeric(), ymax = numeric(), stringsAsFactors = FALSE))
     prediction <- xywh2box(prediction)
-    output <- do_nms(prediction, confidence = confidence, nms_conf = nms_conf, num_classes = num_classes)
+    output <- do_nms(prediction, confidence = confidence, nms_conf = nms_conf, num_classes = num_classes, classes = classes)
     class_num <- output[, 8]
     if (!missing(class_labels) && length(class_labels)) {
         class_label <- rep(NA_character_, length(class_num))

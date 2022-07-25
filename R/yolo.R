@@ -116,6 +116,7 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #' @param image_file character: path to one or more image files, or a single video file (mp4, m4v, or mov extension)
 #' @param conf scalar: confidence level
 #' @param nms_conf scalar: non-max suppression confidence level
+#' @param classes character: vector of class names, only detections of these classes will be returned
 #' @param batch_size integer: the number of images to process as a batch. Increasing `batch_size` will make processing of multiple images faster, but requires more memory
 #'
 #' @return A data.frame with columns "image_number", "image_file", "class", "score", "xmin", "xmax", "ymin", "ymax"
@@ -130,7 +131,8 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #'   ovml_ggplot(img, res)
 #' }
 #' @export
-ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, batch_size = 4) {
+ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classes, batch_size = 4) {
+    if (missing(classes)) classes <- NULL
     input_image_size <- as.integer(net$blocks[[1]]$height)
     if (length(input_image_size) < 1 || is.na(input_image_size) || input_image_size <= 0) stop("invalid input_image_size: ", input_image_size)
     if (length(net$num_classes) < 1 || is.na(net$num_classes)) stop("invalid number of classes")
@@ -165,7 +167,7 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, batch_
         ##}); cat("data copy:\n"); print(st)
         owh <- do.call(rbind, lapply(imgs, function(z) z$original_wh))
         ##st <- system.time({
-            res <- write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels)
+            res <- write_results(output, num_classes = net$num_classes, confidence = conf, nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size, class_labels = net$class_labels, classes = classes)
             res$image_file <- this_image_files[res$image_number]
             res$image_number <- as.integer(res$image_number + starti[i] - 1L)
         ##}); cat("results:\n"); print(st)
