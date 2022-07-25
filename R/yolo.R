@@ -140,7 +140,7 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classe
     if (any(grepl("\\.(mp4|m4v|mov)$", image_file, ignore.case = TRUE))) {
         if (length(image_file) == 1) {
             ## single video file, extract all frames
-            image_file <- ov_video_frames(image_file)
+            image_file <- ovideo::ov_video_frames(image_file)
             ## could also use av::av_video_images ?
         } else {
             stop("only a single video file can be processed")

@@ -1,21 +1,17 @@
 Package: ovml
 Title: Machine Learning Tools for Volleyball
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: c(person("Ben", "Raymond", role = c("aut", "cre"), email = "ben@untan.gl"),
-             person("Adrien", "Ickowicz", role = "aut"))
+             person("Adrien", "Ickowicz", role = "aut"),
+             person("openvolley.org", role = "org"))
 Description: Image and video machine learning tools, for application to volleyball analytics.
 Depends: R (>= 3.3.0)
 Imports:
   assertthat,
-  curl,
-  digest,
-  ggplot2,
-  grid,
-  jpeg,
   magick,
   magrittr,
   ovideo (>= 0.18.0),
-  rappdirs,
+  ovml.common,
   torch
 Suggests:
   testthat
@@ -24,4 +20,4 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
-Remotes: openvolley/ovideo
+Remotes: openvolley/ovideo, openvolley/ovml.common

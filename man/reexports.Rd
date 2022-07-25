@@ -4,6 +4,10 @@
 \name{reexports}
 \alias{reexports}
 \alias{\%>\%}
+\alias{ovml_example_image}
+\alias{ovml_plot}
+\alias{ovml_ggplot}
+\alias{ovml_cache_dir}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -12,5 +16,7 @@ below to see their documentation.
 
 \describe{
   \item{magrittr}{\code{\link[magrittr:pipe]{\%>\%}}}
+
+  \item{ovml.common}{\code{\link[ovml.common]{ovml_cache_dir}}, \code{\link[ovml.common]{ovml_example_image}}, \code{\link[ovml.common:ovml_plot]{ovml_ggplot}}, \code{\link[ovml.common]{ovml_plot}}}
 }}
 
