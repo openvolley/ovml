@@ -86,7 +86,7 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
     }
     if (length(weights_file) && nzchar(weights_file) && !is.na(weights_file)) {
         if (identical(tolower(weights_file), "auto")) {
-            weights_file <- ovml_download_if(w_url, dest = paste0("yolov", version, ".weights"), expected_sha1 = expected_sha1)
+            weights_file <- ovml_download_if(w_url, expected_sha1 = expected_sha1)
         }
         if (file.exists(weights_file)) {
             if (!from_jit) {
