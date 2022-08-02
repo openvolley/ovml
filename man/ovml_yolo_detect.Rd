@@ -10,7 +10,8 @@ ovml_yolo_detect(
   conf = 0.6,
   nms_conf = 0.4,
   classes,
-  batch_size = 4
+  batch_size = 4,
+  ...
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ ovml_yolo_detect(
 \item{classes}{character: vector of class names, only detections of these classes will be returned}
 
 \item{batch_size}{integer: the number of images to process as a batch. Increasing \code{batch_size} will make processing of multiple images faster, but requires more memory}
+
+\item{...}{: currently ignored}
 }
 \value{
 A data.frame with columns "image_number", "image_file", "class", "score", "xmin", "xmax", "ymin", "ymax"

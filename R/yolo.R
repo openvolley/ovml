@@ -56,11 +56,11 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
             expected_sha1 <- "464a6f80b42b9800ff14d8693a218b4d25f36d31"
         } else if (version == "7-tiny-mvb") {
             w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7-tiny-mvb.torchscript.pt"
-            expected_sha1 <- NULL ## to add
+            expected_sha1 <- "5a398436b5929e6ee61cffc3dc0a9dc676ccd578"
         } else {
             ## "7-mvb"
             w_url <- "https://github.com/openvolley/ovml/releases/download/v0.1.0/yolov7-mvb.torchscript.pt"
-            expected_sha1 <- NULL ## to add
+            expected_sha1 <- "84b351f046bf6de1ea0eae74789b526d882c40f5"
         }
         from_jit <- TRUE
         dn <- NULL
@@ -118,6 +118,7 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #' @param nms_conf scalar: non-max suppression confidence level
 #' @param classes character: vector of class names, only detections of these classes will be returned
 #' @param batch_size integer: the number of images to process as a batch. Increasing `batch_size` will make processing of multiple images faster, but requires more memory
+#' @param ... : currently ignored
 #'
 #' @return A data.frame with columns "image_number", "image_file", "class", "score", "xmin", "xmax", "ymin", "ymax"
 #'
@@ -131,7 +132,7 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #'   ovml_ggplot(img, res)
 #' }
 #' @export
-ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classes, batch_size = 4) {
+ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classes, batch_size = 4, ...) {
     if (missing(classes)) classes <- NULL
     input_image_size <- as.integer(net$blocks[[1]]$height)
     if (length(input_image_size) < 1 || is.na(input_image_size) || input_image_size <= 0) stop("invalid input_image_size: ", input_image_size)
