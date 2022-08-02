@@ -18,15 +18,17 @@ remotes::install_github("openvolley/ovml")
 ```
 
 The `ovml` package provides image and video machine learning tools for
-volleyball analytics. See also the
-[opensportml](https://github.com/openvolley/opensportml) for a
-generalized version of this package for use with other sports.
+volleyball analytics. See also
+[ovmlpy](https://github.com/openvolley/ovmlpy), which provides similar
+functionality but with Python-based implementations that are currently
+substantially faster than the libtorch-based implementations in `ovml`.
 
 Currently three versions of the
 [YOLO](https://pjreddie.com/darknet/yolo/) object detection algorithm
-are included (versions 3, 4, and 7). These have been implemented on top
-of the [torch](https://torch.mlverse.org/) R package, meaning that no
-Python installation is required on your system.
+are included (versions 3, 4, and 7) and an experimental version of this
+network specifically for detecting volleyballs. These have been
+implemented on top of the [torch](https://torch.mlverse.org/) R package,
+meaning that no Python installation is required on your system.
 
 **NOTE:** the performance of this package is substantially slower than
 the equivalent native C++/Python implementations. This is a known
@@ -38,8 +40,8 @@ mechanism for R users to apply these algorithms without requiring Python
 (perhaps best suited to analyses of small numbers of images or
 non-time-critical applications).
 
-The package also includes an experimental network specifically for
-detecting volleyballs.
+Note that you probably can’t use `ovml` and `ovmlpy` in the same R
+session, because of conflicts in shared libraries.
 
 This implementation drew from
 [ayooshkathuria/pytorch-yolo-v3](https://github.com/ayooshkathuria/pytorch-yolo-v3),
@@ -150,7 +152,6 @@ And plot it:
 ``` r
 library(datavolley)
 library(ggplot2)
-#> Keep up to date with changes at https://www.tidyverse.org/blog/
 ggplot(dets, aes(x, y)) + ggcourt(labels = NULL, court_colour = "indoor") + geom_point()
 ```
 
