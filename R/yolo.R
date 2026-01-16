@@ -109,7 +109,21 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 }
 
 #' Detect objects in image using a YOLO network
-#'
+
+#' @export
+ovml_yolo_detect.default <- function(net, ...) {
+    stop(
+        "Unsupported detector object of class: ",
+        paste(class(net), collapse = "/"),
+        "\nCreate one with ovml_yolo() (torch) or ovml_yolo_onnx() (onnx)."
+    )
+}
+
+#' @export
+ovml_yolo_detect <- function(net, ...) {
+    UseMethod("ovml_yolo_detect")
+}
+
 #' Processing of a video file requires that `ffmpeg` be installed on your system. [ovideo::ov_install_ffmpeg()] can help with this on Windows and Linux.
 #'
 #' @param net yolo: as returned by [ovml_yolo()]
@@ -132,7 +146,7 @@ ovml_yolo <- function(version = 4, device = "cuda", weights_file = "auto", class
 #'   ovml_ggplot(img, res)
 #' }
 #' @export
-ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classes, batch_size = 4, ...) {
+ovml_yolo_detect.ovml_yolo <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classes, batch_size = 4, ...) {
     if (missing(classes)) classes <- NULL
     input_image_size <- as.integer(net$blocks[[1]]$height)
     if (length(input_image_size) < 1 || is.na(input_image_size) || input_image_size <= 0) stop("invalid input_image_size: ", input_image_size)
@@ -174,4 +188,209 @@ ovml_yolo_detect <- function(net, image_file, conf = 0.6, nms_conf = 0.4, classe
         ##}); cat("results:\n"); print(st)
         res
     }))
+}
+
+
+#' @export
+ovml_yolo_detect.nn_module <- function(net, image_file, conf = 0.6, nms_conf = 0.4,
+                                       classes, batch_size = 4, ...) {
+    # Guard: make sure this is an ovml YOLO-like net
+    if (is.null(net$blocks) || is.null(net$num_classes) || is.null(net$class_labels)) {
+        stop(
+            "This nn_module does not look like an ovml YOLO detector.\n",
+            "Expected fields: blocks, num_classes, class_labels."
+        )
+    }
+    
+    if (missing(classes)) classes <- NULL
+    input_image_size <- as.integer(net$blocks[[1]]$height)
+    if (length(input_image_size) < 1 || is.na(input_image_size) || input_image_size <= 0)
+        stop("invalid input_image_size: ", input_image_size)
+    if (length(net$num_classes) < 1 || is.na(net$num_classes)) stop("invalid number of classes")
+    if (length(net$class_labels) != net$num_classes)
+        stop("length of class_labels does not match the number of classes")
+    
+    if (any(grepl("\\.(mp4|m4v|mov)$", image_file, ignore.case = TRUE))) {
+        if (length(image_file) == 1) {
+            image_file <- ovideo::ov_video_frames(image_file)
+        } else {
+            stop("only a single video file can be processed")
+        }
+    }
+    
+    starti <- seq(1, length(image_file), by = batch_size)
+    endi <- pmin(starti + batch_size - 1L, length(image_file))
+    
+    do.call(rbind, lapply(seq_along(starti), function(i) {
+        this_image_files <- image_file[starti[i]:endi[i]]
+        imgs <- lapply(this_image_files, function(im) {
+            image <- magick::image_read(im)
+            resized_image <- as.numeric(magick::image_data(
+                image_resz(image, input_image_size, preserve_aspect = YOLO_LETTERBOXING),
+                "rgb"
+            ))
+            list(
+                tensor = torch::torch_tensor(
+                    aperm(array(resized_image, dim = c(1, dim(resized_image))), c(1, 4, 2, 3)),
+                    device = net$device
+                ),
+                original_wh = image_wh(image)
+            )
+        })
+        
+        img_tensor <- torch::torch_cat(lapply(imgs, `[[`, "tensor"), dim = 1)
+        
+        output <- net$forward(img_tensor)
+        if (isTRUE(net$from_jit)) output <- as.array(output[[1]]$to(device = torch::torch_device("cpu")))
+        
+        owh <- do.call(rbind, lapply(imgs, `[[`, "original_wh"))
+        
+        res <- write_results(output, num_classes = net$num_classes, confidence = conf,
+                             nms_conf = nms_conf, original_wh = owh, input_image_size = input_image_size,
+                             class_labels = net$class_labels, classes = classes)
+        
+        res$image_file <- this_image_files[res$image_number]
+        res$image_number <- as.integer(res$image_number + starti[i] - 1L)
+        res
+    }))
+}
+
+
+#' Run YOLO inference on a video (sampled frames + timestamps)
+#'
+#' This is a convenience wrapper around [ovideo::ov_video_frames()] and
+#' [ovml_yolo_detect()], adding time-windowing, frame sampling and timestamps.
+#'
+#' @param net YOLO network as returned by [ovml_yolo()].
+#' @param video_file Path to a video file.
+#' @param start_time Numeric seconds from the start of the video (default 0).
+#' @param end_time Numeric seconds from the start of the video (optional).
+#' @param duration Numeric seconds (optional). If `end_time` is missing, `duration` is used.
+#' @param fps_extract Numeric. Frames per second to extract (sampling rate). If `NULL`,
+#'   all frames are extracted.
+#' @param fps_video Numeric. Video framerate. If missing, inferred via `av::av_video_info()`.
+#'   Used only to compute timestamps when `fps_extract` is `NULL`.
+#' @param conf,nms_conf,classes,batch_size Passed to [ovml_yolo_detect()].
+#' @param outdir Output directory for extracted frames. If missing, a temp dir is used.
+#' @param keep_frames Logical; if `FALSE`, extracted frames are deleted on exit.
+#' @param format "jpg" or "png" (passed to [ovideo::ov_video_frames()]).
+#' @param jpg_quality Numeric 1-31 (passed to [ovideo::ov_video_frames()] if `format="jpg"`).
+#' @param debug Logical; passed to [ovideo::ov_video_frames()].
+#'
+#' @return A list with elements: `detections`, `frames`, `meta`.
+#' 
+#' @seealso [ovml_yolo()]
+#'
+#' @examples
+#' \dontrun{
+#'   library(ovideo)
+#'   v <- ov_example_video(1)
+#'   dn <- ovml_yolo()
+#'   out <- ovml_yolo_detect_video(dn, v, start_time = 0, duration = 3, fps_extract = 5)
+#'   head(out$detections)
+#' }
+#' @export
+ovml_yolo_detect_video <- function(
+        net,
+        video_file,
+        start_time = 0,
+        end_time,
+        duration,
+        fps_extract = 5,
+        fps_video,
+        conf = 0.6,
+        nms_conf = 0.4,
+        classes,
+        batch_size = 4,
+        outdir,
+        keep_frames = FALSE,
+        format = "jpg",
+        jpg_quality = 1,
+        debug = FALSE
+) {
+    stopifnot(length(video_file) == 1, is.character(video_file))
+    if (!file.exists(video_file)) stop("video_file does not exist: ", video_file)
+    
+    # Derive end_time/duration logic
+    if (missing(end_time) && missing(duration)) {
+        # default: process to end of file? We can’t reliably know duration without probing,
+        # so require one. You can change this to probe via av if you prefer.
+        stop("Provide either end_time or duration.")
+    }
+    if (missing(end_time)) end_time <- start_time + duration
+    if (!missing(duration)) end_time <- start_time + duration
+    
+    if (missing(outdir)) {
+        outdir <- tempfile("ovml_frames_")
+        dir.create(outdir, recursive = TRUE)
+    } else {
+        if (!dir.exists(outdir)) stop("outdir must exist: ", outdir)
+    }
+    
+    # Cleanup extracted frames unless requested
+    if (!isTRUE(keep_frames)) {
+        on.exit(unlink(outdir, recursive = TRUE, force = TRUE), add = TRUE)
+    }
+    
+    # Extract frames (sampling if fps_extract provided)
+    frames <- ovideo::ov_video_frames(
+        video_file = video_file,
+        start_time = start_time,
+        end_time   = end_time,
+        outdir     = outdir,
+        fps        = fps_extract,
+        format     = format,
+        jpg_quality = jpg_quality,
+        debug      = debug
+    )
+    
+    if (!length(frames)) {
+        return(list(
+            detections = data.frame(),
+            frames = character(),
+            meta = list(video_file = video_file, start_time = start_time, end_time = end_time,
+                        fps_extract = fps_extract, outdir = outdir)
+        ))
+    }
+    
+    # Run detection on extracted frames (regular image path workflow)
+    dets <- ovml_yolo_detect(
+        net = net,
+        image_file = frames,
+        conf = conf,
+        nms_conf = nms_conf,
+        classes = if (missing(classes)) NULL else classes,
+        batch_size = batch_size
+    )
+    
+    # Add frame_number and timestamps
+    # image_number from ovml_yolo_detect is 1-based across the frames vector. :contentReference[oaicite:3]{index=3}
+    dets$frame_number <- dets$image_number
+    
+    # If we extracted at fps_extract, timestamps align with that sampling grid.
+    # If fps_extract is NULL (all frames), we need the true fps to compute time.
+    if (is.null(fps_extract)) {
+        if (missing(fps_video)) {
+            vi <- av::av_video_info(video_file)
+            fps_video <- vi$video$framerate
+        }
+        dt <- 1 / fps_video
+    } else {
+        dt <- 1 / fps_extract
+    }
+    
+    dets$time_s <- start_time + (dets$frame_number - 1) * dt
+    
+    list(
+        detections = dets,
+        frames = frames,
+        meta = list(
+            video_file = video_file,
+            start_time = start_time,
+            end_time = end_time,
+            fps_extract = fps_extract,
+            fps_video = if (!missing(fps_video)) fps_video else NA_real_,
+            outdir = outdir
+        )
+    )
 }

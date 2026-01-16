@@ -1,6 +1,6 @@
 Package: ovml
 Title: Machine Learning Tools for Volleyball
-Version: 0.1.6
+Version: 0.1.7
 Authors@R: c(person("Ben", "Raymond", role = c("aut", "cre"), email = "ben@untan.gl"),
              person("Adrien", "Ickowicz", role = "aut"),
              person("openvolley.org", role = "org"))
@@ -12,6 +12,7 @@ Imports:
   magrittr,
   ovideo (>= 0.18.0),
   ovml.common,
+  reticulate,
   torch
 Suggests:
   testthat
@@ -19,5 +20,5 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2
 Remotes: openvolley/ovideo, openvolley/ovml.common

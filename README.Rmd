@@ -73,6 +73,16 @@ ovml_ggplot(img, ball_dets, label_geom = NULL) ## don't add the label, it obscur
 
 ```
 
+
+We can also try using onnx:
+
+```{r onnx}
+dn <- ovml_yolo_onnx()
+ovml_install_onnxruntime()
+dets <- ovml_yolo_detect(dn, img, conf = 0.3)
+ovml_ggplot(img, dets)
+```
+
 We can transform the image detections to real-world court coordinates. First we need to define the court reference points needed for the transformation. We can use the `ov_shiny_court_ref` helper app for this:
 
 ```{r ex5h, echo = FALSE}

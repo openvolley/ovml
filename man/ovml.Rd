@@ -2,8 +2,23 @@
 % Please edit documentation in R/ovml-package.R
 \docType{package}
 \name{ovml}
+\alias{ovml-package}
 \alias{ovml}
 \title{\pkg{ovml}}
 \description{
 Image and video machine learning tools, for application to volleyball analytics.
+}
+\author{
+\strong{Maintainer}: Ben Raymond \email{ben@untan.gl}
+
+Authors:
+\itemize{
+  \item Adrien Ickowicz
+}
+
+Other contributors:
+\itemize{
+  \item openvolley.org [originator]
+}
+
 }
